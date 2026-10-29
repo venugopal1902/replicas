@@ -486,7 +486,7 @@ def render_index(site: dict, services: list[dict]) -> str:
   </section>
 </main>
 """
-    return page_shell(site, f"{site['title']} &middot; {site['tagline']}", body, depth=0)
+    return page_shell(site, f"{site['title']} · {site['tagline']}", body, depth=0)
 
 
 def render_service(site: dict, s: dict) -> str:
@@ -626,7 +626,7 @@ def render_service(site: dict, s: dict) -> str:
 """
     return page_shell(
         site,
-        f"{s['name']} &middot; {site['title']}",
+        f"{s['name']} · {site['title']}",
         body,
         depth=1,
     )
