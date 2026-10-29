@@ -8,6 +8,9 @@ class PublishResult:
         self.url = url
         self.error = error
 
+    def __repr__(self) -> str:
+        return f"PublishResult(success={self.success}, post_id={self.post_id!r}, url={self.url!r}, error={self.error!r})"
+
 class BaseSocialConnector(ABC):
     @abstractmethod
     async def publish(self, text: str, media_urls: List[str], target_meta: Dict[str, Any]) -> PublishResult:

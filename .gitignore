@@ -28,3 +28,7 @@ Thumbs.db
 .idea/
 .vscode/
 *.log
+
+# local test artifacts
+.tmp-chrome/
+*.db

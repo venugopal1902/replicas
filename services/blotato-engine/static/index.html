@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blotato Engine</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div id="gate" class="gate" hidden>
+  <form id="gate-form" class="gate-card">
+    <div class="mark">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5v-11Zm3.2 2.1v7.8h1.7v-3.1l2.2 3.1h2l-2.5-3.4 2.4-4.4h-2L8.9 11V8.6H7.2Zm7.1 0v6.1h-1.7V8.6h1.7Zm0 7.8v-1.2h-1.7v1.2h1.7Z"/></svg>
+      <span>Blotato Engine</span>
+    </div>
+    <h1>Sign in</h1>
+    <p class="muted">This console talks to the engine on this same origin. Paste an API key to continue.</p>
+    <label class="field">
+      <span>API key</span>
+      <input id="gate-key" type="password" autocomplete="off" spellcheck="false" placeholder="blt_..." required>
+    </label>
+    <button class="btn primary" type="submit">Continue</button>
+    <p class="hint">How to get a key: use the seeded master key <code>blt_master_venu_secret_2026</code>, or mint one with <code>scripts/create_api_key.py</code>.</p>
+    <p id="gate-error" class="inline-error" hidden></p>
+  </form>
+</div>
+
+<div id="shell" class="shell" hidden>
+  <aside class="sidebar">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5v-11Zm3.2 2.1v7.8h1.7v-3.1l2.2 3.1h2l-2.5-3.4 2.4-4.4h-2L8.9 11V8.6H7.2Zm7.1 0v6.1h-1.7V8.6h1.7Zm0 7.8v-1.2h-1.7v1.2h1.7Z"/></svg>
+      <span class="brand-name">Blotato Engine</span>
+    </div>
+    <nav id="nav" class="nav">
+      <a href="#dashboard" data-route="dashboard"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4V4Zm9 0h7v4h-7V4ZM4 13h7v7H4v-7Zm9 6v-7h7v7h-7Z"/></svg><span>Dashboard</span></a>
+      <a href="#compose" data-route="compose"><svg viewBox="0 0 24 24"><path d="M4 5h16v2H4V5Zm0 4h10v2H4V9Zm0 4h16v2H4v-2Zm0 4h10v2H4v-2Z"/></svg><span>Compose</span></a>
+      <a href="#queue" data-route="queue"><svg viewBox="0 0 24 24"><path d="M7 3h2v2h6V3h2v2h3v16H4V5h3V3Zm11 6H6v10h12V9ZM8 12h3v3H8v-3Z"/></svg><span>Queue</span></a>
+      <a href="#inbox" data-route="inbox"><svg viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-5 4V6Z"/></svg><span>Inbox</span></a>
+      <a href="#automations" data-route="automations"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg><span>Automations</span></a>
+      <a href="#visuals" data-route="visuals"><svg viewBox="0 0 24 24"><path d="M4 5h16v12H4V5Zm2 2v8h12V7H6Zm-2 12h16v2H4v-2Z"/></svg><span>Visuals</span></a>
+      <a href="#sources" data-route="sources"><svg viewBox="0 0 24 24"><path d="M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5h-2v4H6V6h4V4Zm5 0v2h3.6L11 13.6 12.4 15 20 7.4V11h2V4h-7Z"/></svg><span>Sources</span></a>
+      <a href="#analytics" data-route="analytics"><svg viewBox="0 0 24 24"><path d="M4 19h16v2H4v-2Zm2-3h3v-6H6v6Zm5 0h3V6h-3v10Zm5 0h3v-8h-3v8Z"/></svg><span>Analytics</span></a>
+      <a href="#settings" data-route="settings"><svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm9 4-2.1.6a7.7 7.7 0 0 1-.7 1.7l1.2 1.8-1.4 1.4-1.8-1.2a7.7 7.7 0 0 1-1.7.7L12 21l-.6-2.1a7.7 7.7 0 0 1-1.7-.7l-1.8 1.2-1.4-1.4 1.2-1.8a7.7 7.7 0 0 1-.7-1.7L3 12l2.1-.6c.1-.6.4-1.2.7-1.7L4.6 7.9 6 6.5l1.8 1.2c.5-.3 1.1-.6 1.7-.7L10 5h2l.5 2c.6.1 1.2.4 1.7.7l1.8-1.2 1.4 1.4-1.2 1.8c.3.5.6 1.1.7 1.7L21 12Z"/></svg><span>Settings</span></a>
+    </nav>
+    <div id="plan-widget" class="plan-widget">
+      <div class="plan-name">--</div>
+      <div class="plan-credits muted">--</div>
+    </div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <h2 id="view-title">Dashboard</h2>
+      <div class="topbar-meta">
+        <span id="who" class="muted"></span>
+        <button id="signout" class="btn ghost" type="button">Sign out</button>
+      </div>
+    </header>
+    <div id="view" class="view"></div>
+  </main>
+</div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

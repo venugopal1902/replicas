@@ -1,94 +1,366 @@
+"""JSON-RPC MCP server exposing the full engine surface to AI agents."""
 import json
-from typing import Dict, Any, List
-from fastapi import APIRouter, Request, Header, HTTPException, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import datetime
+from typing import Any, Dict, List
+
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select, desc
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from ..database import get_db
-from ..models import ApiKeyModel, SocialAccountModel, PostModel
+from ..models import (
+    ApiKeyModel, SocialAccountModel, PostModel, CommentModel, MessageModel,
+    DMAutomationModel, AnalyticsSnapshotModel, SourceModel,
+)
 from ..auth import get_current_user
 from ..connectors import get_connector
 
 router = APIRouter(tags=["mcp"])
 
-MCP_TOOLS = [
-    {
-        "name": "blotato_list_accounts",
-        "description": "List all connected social media accounts (Instagram, X/Twitter, LinkedIn, YouTube, etc.)",
+
+def _tool(name: str, description: str, properties: Dict[str, Any], required: List[str] | None = None) -> Dict[str, Any]:
+    return {
+        "name": name,
+        "description": description,
         "inputSchema": {
             "type": "object",
-            "properties": {},
-            "required": []
-        }
-    },
-    {
-        "name": "blotato_publish_post",
-        "description": "Publish or schedule a social media post across 9+ networks with one call.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "accountId": {
-                    "type": "string",
-                    "description": "The target social account ID (from blotato_list_accounts)"
-                },
-                "text": {
-                    "type": "string",
-                    "description": "Post caption or tweet copy"
-                },
-                "mediaUrls": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Public URLs of images or MP4 videos to attach"
-                },
-                "scheduledTime": {
-                    "type": "string",
-                    "description": "Optional ISO 8601 timestamp for scheduling. Omit for immediate publish."
-                }
-            },
-            "required": ["accountId", "text"]
-        }
-    },
-    {
-        "name": "blotato_get_post_status",
-        "description": "Check the status, live URL, or failure reason of a submitted post.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "postSubmissionId": {
-                    "type": "string",
-                    "description": "The post submission ID returned by blotato_publish_post"
-                }
-            },
-            "required": ["postSubmissionId"]
-        }
-    },
-    {
-        "name": "blotato_get_analytics",
-        "description": "Fetch engagement metrics (views, impressions, likes, comments, shares) for a post or account.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "postSubmissionId": {
-                    "type": "string",
-                    "description": "Optional specific post ID to fetch metrics for"
-                }
-            }
-        }
-    },
-    {
-        "name": "blotato_check_credits",
-        "description": "Check remaining API credits, active plan, and rate limit quotas.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {}
-        }
+            "properties": properties,
+            "required": required or [],
+        },
     }
+
+
+MCP_TOOLS: List[Dict[str, Any]] = [
+    _tool("blotato_list_accounts",
+          "List every connected social account with its platform, name and accountId.",
+          {}),
+    _tool("blotato_publish_post",
+          "Publish or schedule a post to one connected account. Returns the submission id, status and live URL.",
+          {
+              "accountId": {"type": "string", "description": "Target account id from blotato_list_accounts"},
+              "text": {"type": "string", "description": "Post copy"},
+              "mediaUrls": {"type": "array", "items": {"type": "string"},
+                            "description": "Public URLs of images or video"},
+              "scheduledTime": {"type": "string",
+                                "description": "ISO-8601 timestamp. Omit to publish immediately."},
+          },
+          ["accountId", "text"]),
+    _tool("blotato_get_post_status",
+          "Resolve a submission to published, scheduled or failed, with its live URL.",
+          {"postSubmissionId": {"type": "string"}}, ["postSubmissionId"]),
+    _tool("blotato_list_schedules",
+          "List posts waiting in the scheduling queue.",
+          {"limit": {"type": "number", "default": 50}}),
+    _tool("blotato_next_free_slot",
+          "Return the next open slot from the account's weekly schedule.",
+          {"accountId": {"type": "string"}}),
+    _tool("blotato_get_analytics",
+          "Fetch overview totals, or per-post metrics with snapshot history when postSubmissionId is given.",
+          {"postSubmissionId": {"type": "string"}}),
+    _tool("blotato_top_posts",
+          "Rank published posts by views, likes, comments, shares, saves or reach.",
+          {"metric": {"type": "string",
+                      "enum": ["views", "likes", "comments", "shares", "saves", "reach"]},
+           "limit": {"type": "number", "default": 10}}),
+    _tool("blotato_list_comments",
+          "List comments awaiting a reply.",
+          {"accountId": {"type": "string"}, "unreadOnly": {"type": "boolean", "default": True}}),
+    _tool("blotato_reply_to_comment",
+          "Post a public reply to a comment.",
+          {"commentId": {"type": "string"}, "text": {"type": "string"}},
+          ["commentId", "text"]),
+    _tool("blotato_list_threads",
+          "List direct-message conversations with unread counts.",
+          {"accountId": {"type": "string"}}),
+    _tool("blotato_get_thread",
+          "Read the full transcript of one DM thread.",
+          {"threadId": {"type": "string"}}, ["threadId"]),
+    _tool("blotato_send_message",
+          "Send a direct message into an existing thread.",
+          {"threadId": {"type": "string"}, "text": {"type": "string"},
+           "accountId": {"type": "string"}},
+          ["threadId", "text"]),
+    _tool("blotato_list_automations",
+          "List keyword-triggered DM automations with run statistics.",
+          {}),
+    _tool("blotato_run_automation",
+          "Simulate an inbound comment or DM to test an automation end to end.",
+          {"automationId": {"type": "string"}, "text": {"type": "string"},
+           "type": {"type": "string", "enum": ["comment-received", "message-received"]}},
+          ["automationId", "text"]),
+    _tool("blotato_list_templates",
+          "List the visual templates available for generation.",
+          {}),
+    _tool("blotato_create_visual",
+          "Render a visual from a template. Inputs depend on the template.",
+          {"templateId": {"type": "string"}, "inputs": {"type": "object"}},
+          ["templateId", "inputs"]),
+    _tool("blotato_check_credits",
+          "Report the calling key's plan, credit balance and rate limit.",
+          {}),
 ]
+
+
+def _text(payload: Any) -> Dict[str, Any]:
+    return {"content": [{"type": "text", "text": json.dumps(payload, indent=2, default=str)}]}
+
+
+def _err(message: str) -> Dict[str, Any]:
+    return {"isError": True, "content": [{"type": "text", "text": message}]}
+
+
+async def _dispatch(name: str, args: Dict[str, Any], user: ApiKeyModel, db: AsyncSession) -> Dict[str, Any]:
+    if name == "blotato_list_accounts":
+        res = await db.execute(select(SocialAccountModel).where(SocialAccountModel.user_id == user.id))
+        return _text([
+            {"id": a.id, "platform": a.platform, "name": a.name, "username": a.username}
+            for a in res.scalars().all()
+        ])
+
+    if name == "blotato_publish_post":
+        account_id = args.get("accountId")
+        text = args.get("text", "")
+        media = args.get("mediaUrls") or []
+        when = args.get("scheduledTime")
+
+        res = await db.execute(select(SocialAccountModel).where(
+            SocialAccountModel.id == account_id, SocialAccountModel.user_id == user.id))
+        account = res.scalar_one_or_none()
+        if not account:
+            return _err(f"Account {account_id} not found for this key.")
+
+        scheduled = None
+        if when:
+            try:
+                scheduled = datetime.fromisoformat(str(when).replace("Z", "+00:00"))
+            except ValueError:
+                return _err("scheduledTime must be ISO-8601.")
+
+        post = PostModel(
+            user_id=user.id, account_id=account.id, platform=account.platform,
+            text=text, media_urls_json=json.dumps(media),
+            status="scheduled" if scheduled else "in-progress",
+            scheduled_time=scheduled,
+        )
+        db.add(post)
+        await db.commit()
+        await db.refresh(post)
+
+        if not scheduled:
+            connector = get_connector(account.platform, account.credentials_json)
+            result = await connector.publish(text, media, {})
+            post.status = "published" if result.success else "failed"
+            post.published_at = datetime.utcnow() if result.success else None
+            post.platform_post_id = result.post_id
+            post.platform_post_url = result.url
+            post.error_message = result.error
+            await db.commit()
+            await db.refresh(post)
+
+        return _text({
+            "postSubmissionId": post.id, "status": post.status,
+            "platform": post.platform, "url": post.platform_post_url,
+            "error": post.error_message,
+        })
+
+    if name == "blotato_get_post_status":
+        res = await db.execute(select(PostModel).where(
+            PostModel.id == args.get("postSubmissionId"), PostModel.user_id == user.id))
+        post = res.scalar_one_or_none()
+        if not post:
+            return _err("Post not found.")
+        return _text({"status": post.status, "url": post.platform_post_url,
+                      "error": post.error_message,
+                      "scheduledTime": post.scheduled_time})
+
+    if name == "blotato_list_schedules":
+        res = await db.execute(select(PostModel).where(
+            PostModel.user_id == user.id, PostModel.status == "scheduled"
+        ).order_by(PostModel.scheduled_time).limit(int(args.get("limit", 50))))
+        return _text([
+            {"id": p.id, "platform": p.platform, "text": p.text,
+             "scheduledTime": p.scheduled_time}
+            for p in res.scalars().all()
+        ])
+
+    if name == "blotato_next_free_slot":
+        from ..api.routes_schedules import next_slot_time
+        from ..models import ScheduleSlotModel
+        q = select(ScheduleSlotModel).where(
+            ScheduleSlotModel.user_id == user.id, ScheduleSlotModel.is_active == True)  # noqa: E712
+        if args.get("accountId"):
+            q = q.where(ScheduleSlotModel.account_id == args["accountId"])
+        slots = (await db.execute(q)).scalars().all()
+        if not slots:
+            return _err("No active schedule slots.")
+        nxt = next_slot_time(slots, tz_name=slots[0].timezone)
+        return _text({"slotTime": nxt.isoformat() if nxt else None, "timezone": slots[0].timezone})
+
+    if name == "blotato_get_analytics":
+        pid = args.get("postSubmissionId")
+        if pid:
+            res = await db.execute(select(AnalyticsSnapshotModel).where(
+                AnalyticsSnapshotModel.post_submission_id == pid,
+                AnalyticsSnapshotModel.user_id == user.id
+            ).order_by(AnalyticsSnapshotModel.captured_at))
+            snaps = res.scalars().all()
+            if not snaps:
+                return _err("No metrics captured for that post yet.")
+            last = snaps[-1]
+            return _text({
+                "postSubmissionId": pid,
+                "metrics": {"views": last.views, "likes": last.likes, "comments": last.comments,
+                            "shares": last.shares, "saves": last.saves, "reach": last.reach},
+                "history": [{"views": s.views, "likes": s.likes, "capturedAt": s.captured_at}
+                            for s in snaps],
+            })
+        res = await db.execute(select(AnalyticsSnapshotModel).where(
+            AnalyticsSnapshotModel.user_id == user.id))
+        snaps = res.scalars().all()
+        return _text({
+            "posts": len(snaps),
+            "views": sum(s.views for s in snaps),
+            "likes": sum(s.likes for s in snaps),
+            "comments": sum(s.comments for s in snaps),
+            "shares": sum(s.shares for s in snaps),
+        })
+
+    if name == "blotato_top_posts":
+        metric = args.get("metric", "views")
+        if metric not in ("views", "likes", "comments", "shares", "saves", "reach"):
+            return _err("Unsupported metric.")
+        col = getattr(AnalyticsSnapshotModel, metric)
+        res = await db.execute(
+            select(AnalyticsSnapshotModel, PostModel)
+            .join(PostModel, PostModel.id == AnalyticsSnapshotModel.post_submission_id)
+            .where(AnalyticsSnapshotModel.user_id == user.id)
+            .order_by(desc(col)).limit(int(args.get("limit", 10)))
+        )
+        return _text([
+            {"platform": p.platform, "text": p.text[:90], "url": p.platform_post_url,
+             "views": s.views, "likes": s.likes}
+            for s, p in res.all()
+        ])
+
+    if name == "blotato_list_comments":
+        q = select(CommentModel).where(CommentModel.user_id == user.id)
+        if args.get("accountId"):
+            q = q.where(CommentModel.account_id == args["accountId"])
+        if args.get("unreadOnly", True):
+            q = q.where(CommentModel.is_replied == False)  # noqa: E712
+        res = await db.execute(q.order_by(desc(CommentModel.created_at)).limit(50))
+        return _text([
+            {"id": c.id, "author": c.author, "text": c.text, "platform": c.platform}
+            for c in res.scalars().all()
+        ])
+
+    if name == "blotato_reply_to_comment":
+        res = await db.execute(select(CommentModel).where(
+            CommentModel.id == args.get("commentId"), CommentModel.user_id == user.id))
+        comment = res.scalar_one_or_none()
+        if not comment:
+            return _err("Comment not found.")
+        comment.reply_text = args.get("text")
+        comment.is_replied = True
+        comment.replied_at = datetime.utcnow()
+        await db.commit()
+        return _text({"replied": True, "commentId": comment.id})
+
+    if name == "blotato_list_threads":
+        q = select(MessageModel).where(MessageModel.user_id == user.id)
+        if args.get("accountId"):
+            q = q.where(MessageModel.account_id == args["accountId"])
+        rows = (await db.execute(q.order_by(desc(MessageModel.created_at)))).scalars().all()
+        seen: Dict[str, Any] = {}
+        for m in rows:
+            seen.setdefault(m.thread_id, {
+                "threadId": m.thread_id, "platform": m.platform,
+                "lastMessage": m.text, "lastAt": m.created_at,
+            })
+        return _text(list(seen.values()))
+
+    if name == "blotato_get_thread":
+        res = await db.execute(select(MessageModel).where(
+            MessageModel.user_id == user.id,
+            MessageModel.thread_id == args.get("threadId")
+        ).order_by(MessageModel.created_at))
+        msgs = res.scalars().all()
+        if not msgs:
+            return _err("Thread not found.")
+        for m in msgs:
+            m.is_read = True
+        await db.commit()
+        return _text([{"author": m.author, "text": m.text, "direction": m.direction} for m in msgs])
+
+    if name == "blotato_send_message":
+        tid = args.get("threadId")
+        text = args.get("text", "")
+        if not tid or not text:
+            return _err("threadId and text are required.")
+        res = await db.execute(select(MessageModel).where(
+            MessageModel.user_id == user.id, MessageModel.thread_id == tid).limit(1))
+        existing = res.scalar_one_or_none()
+        msg = MessageModel(
+            user_id=user.id,
+            account_id=args.get("accountId") or (existing.account_id if existing else None),
+            platform=existing.platform if existing else "instagram",
+            thread_id=tid, author="you", text=text, direction="outbound", is_read=True,
+        )
+        db.add(msg)
+        await db.commit()
+        return _text({"sent": True, "threadId": tid})
+
+    if name == "blotato_list_automations":
+        res = await db.execute(select(DMAutomationModel).where(
+            DMAutomationModel.user_id == user.id))
+        return _text([
+            {"id": a.id, "name": a.name, "platform": a.platform,
+             "triggers": json.loads(a.triggers_json or "[]"),
+             "triggered": a.triggered_count, "completed": a.completed_count}
+            for a in res.scalars().all()
+        ])
+
+    if name == "blotato_run_automation":
+        from ..api.routes_automations import run_automations
+        res = await db.execute(select(DMAutomationModel).where(
+            DMAutomationModel.id == args.get("automationId"),
+            DMAutomationModel.user_id == user.id))
+        auto = res.scalar_one_or_none()
+        if not auto:
+            return _err("Automation not found.")
+        run = await run_automations({
+            "type": args.get("type", "comment-received"),
+            "text": args.get("text", ""),
+            "author": "mcp_test",
+            "accountId": auto.account_id,
+            "platform": auto.platform,
+        })
+        return _text(run)
+
+    if name == "blotato_list_templates":
+        from ..api.routes_visuals import TEMPLATES
+        return _text([{"id": t["id"], "title": t["title"],
+                       "inputs": [i["name"] for i in t["inputs"]]} for t in TEMPLATES])
+
+    if name == "blotato_create_visual":
+        return _err("Use the REST endpoint POST /v2/videos/from-templates for rendering; "
+                    "it returns public output URLs.")
+
+    if name == "blotato_check_credits":
+        return _text({
+            "clientName": user.client_name, "plan": user.plan,
+            "credits": "unlimited" if user.credits == -1 else user.credits,
+            "rateLimitPerHour": user.rate_limit_per_hour,
+        })
+
+    return _err(f"Unknown tool '{name}'.")
+
 
 @router.post("/mcp")
 async def handle_mcp_request(
     request: Request,
     user: ApiKeyModel = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     try:
         body = await request.json()
@@ -101,160 +373,25 @@ async def handle_mcp_request(
 
     if method == "initialize":
         return {
-            "jsonrpc": "2.0",
-            "id": req_id,
+            "jsonrpc": "2.0", "id": req_id,
             "result": {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {"tools": {}},
-                "serverInfo": {
-                    "name": "blotato-self-hosted-mcp",
-                    "version": "2.0.0"
-                }
-            }
+                "serverInfo": {"name": "blotato-self-hosted-mcp", "version": "2.0.0"},
+            },
         }
 
-    elif method == "tools/list":
-        return {
-            "jsonrpc": "2.0",
-            "id": req_id,
-            "result": {"tools": MCP_TOOLS}
-        }
+    if method == "tools/list":
+        return {"jsonrpc": "2.0", "id": req_id, "result": {"tools": MCP_TOOLS}}
 
-    elif method == "tools/call":
+    if method == "tools/call":
         tool_name = params.get("name")
-        args = params.get("arguments", {})
+        args = params.get("arguments", {}) or {}
+        if tool_name not in {t["name"] for t in MCP_TOOLS}:
+            return {"jsonrpc": "2.0", "id": req_id,
+                    "error": {"code": -32601, "message": f"Unknown tool '{tool_name}'"}}
+        result = await _dispatch(tool_name, args, user, db)
+        return {"jsonrpc": "2.0", "id": req_id, "result": result}
 
-        if tool_name == "blotato_list_accounts":
-            res = await db.execute(select(SocialAccountModel).where(SocialAccountModel.user_id == user.id))
-            accounts = res.scalars().all()
-            result_data = [
-                {"id": str(a.id), "platform": a.platform, "name": a.name, "username": a.username}
-                for a in accounts
-            ]
-            return {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "result": {"content": [{"type": "text", "text": json.dumps(result_data, indent=2)}]}
-            }
-
-        elif tool_name == "blotato_publish_post":
-            account_id = args.get("accountId")
-            text = args.get("text", "")
-            media_urls = args.get("mediaUrls", [])
-            scheduled_time = args.get("scheduledTime")
-
-            # Look up account
-            res = await db.execute(
-                select(SocialAccountModel).where(
-                    SocialAccountModel.id == account_id,
-                    SocialAccountModel.user_id == user.id
-                )
-            )
-            account = res.scalar_one_or_none()
-            if not account:
-                return {
-                    "jsonrpc": "2.0",
-                    "id": req_id,
-                    "result": {"isError": True, "content": [{"type": "text", "text": f"Account {account_id} not found."}]}
-                }
-
-            connector = get_connector(account.platform, account.credentials_json)
-            pub_res = await connector.publish(text=text, media_urls=media_urls, target_meta={})
-
-            post = PostModel(
-                user_id=user.id,
-                account_id=account.id,
-                platform=account.platform,
-                text=text,
-                media_urls_json=json.dumps(media_urls),
-                status="published" if pub_res.success else "failed",
-                platform_post_id=pub_res.post_id,
-                platform_post_url=pub_res.url,
-                error_message=pub_res.error
-            )
-            db.add(post)
-            await db.commit()
-            await db.refresh(post)
-
-            output = {
-                "postSubmissionId": str(post.id),
-                "status": post.status,
-                "platform": post.platform,
-                "url": post.platform_post_url,
-                "error": post.error_message
-            }
-            return {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "result": {"content": [{"type": "text", "text": json.dumps(output, indent=2)}]}
-            }
-
-        elif tool_name == "blotato_get_post_status":
-            post_id = args.get("postSubmissionId")
-            res = await db.execute(select(PostModel).where(PostModel.id == post_id, PostModel.user_id == user.id))
-            post = res.scalar_one_or_none()
-            if not post:
-                return {
-                    "jsonrpc": "2.0",
-                    "id": req_id,
-                    "result": {"isError": True, "content": [{"type": "text", "text": "Post not found."}]}
-                }
-            return {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "result": {
-                    "content": [{
-                        "type": "text",
-                        "text": json.dumps({
-                            "status": post.status,
-                            "url": post.platform_post_url,
-                            "error": post.error_message
-                        }, indent=2)
-                    }]
-                }
-            }
-
-        elif tool_name == "blotato_get_analytics":
-            return {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "result": {
-                    "content": [{
-                        "type": "text",
-                        "text": json.dumps({
-                            "views": 2450,
-                            "likes": 182,
-                            "comments": 28,
-                            "shares": 14
-                        }, indent=2)
-                    }]
-                }
-            }
-
-        elif tool_name == "blotato_check_credits":
-            return {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "result": {
-                    "content": [{
-                        "type": "text",
-                        "text": json.dumps({
-                            "clientName": user.client_name,
-                            "plan": user.plan,
-                            "creditsRemaining": user.credits if user.credits != -1 else "Unlimited"
-                        }, indent=2)
-                    }]
-                }
-            }
-
-        return {
-            "jsonrpc": "2.0",
-            "id": req_id,
-            "error": {"code": -32601, "message": f"Method/Tool '{tool_name}' not found"}
-        }
-
-    return {
-        "jsonrpc": "2.0",
-        "id": req_id,
-        "error": {"code": -32600, "message": "Unsupported JSON-RPC request"}
-    }
+    return {"jsonrpc": "2.0", "id": req_id,
+            "error": {"code": -32600, "message": "Unsupported JSON-RPC method"}}

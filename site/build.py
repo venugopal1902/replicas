@@ -290,6 +290,10 @@ footer {
 .foot-inner .sp { margin-left: auto; }
 
 /* ---------- misc ---------- */
+.shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin: 22px 0 8px; }
+.shot { margin: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--bg-soft); }
+.shot img { display: block; width: 100%; height: auto; }
+.shot figcaption { padding: 9px 14px; font-size: 12.5px; color: var(--dim); border-top: 1px solid var(--border-soft); }
 .pill-row { display: flex; flex-wrap: wrap; gap: 7px; margin: 16px 0 4px; }
 .anchor-link { color: var(--dim); font-size: 16px; margin-left: 8px; opacity: 0; }
 h2:hover .anchor-link { opacity: 1; }
@@ -492,6 +496,7 @@ def render_index(site: dict, services: list[dict]) -> str:
 def render_service(site: dict, s: dict) -> str:
     sections = [
         ("overview", "Overview"),
+        ("ui", "Interface"),
         ("install", "Install"),
         ("usage", "Usage"),
         ("api", "API reference"),
@@ -526,7 +531,18 @@ def render_service(site: dict, s: dict) -> str:
             )
         parts.append("</div>")
 
-    # Install
+    # Interface + Install
+    if s.get("ui"):
+        parts.append('<h2 id="ui">Interface<a class="anchor-link" href="#ui">#</a></h2>')
+        parts.append(f"<p>{esc(s['ui'].get('intro', 'Runs in the browser at the same origin as the API.'))}</p>")
+        parts.append('<div class="shots">')
+        for img in s["ui"].get("images", []):
+            parts.append(
+                f'<figure class="shot"><img src="../{esc(img["src"])}" alt="{esc(img.get("caption", ""))}" loading="lazy">'
+                f'<figcaption>{esc(img.get("caption", ""))}</figcaption></figure>'
+            )
+        parts.append("</div>")
+
     parts.append('<h2 id="install">Install<a class="anchor-link" href="#install">#</a></h2>')
     parts.append("<p>From a clean machine to a running server in four commands.</p>")
     parts.append("<h3>Requirements</h3><ul>")
@@ -644,6 +660,12 @@ def main() -> None:
 
     (ASSETS / "style.css").write_text(STYLE, encoding="utf-8")
     (ASSETS / "app.js").write_text(SCRIPT, encoding="utf-8")
+
+    # Copy static assets that live outside the generated HTML (screenshots, images)
+    src_assets = ROOT / "site" / "assets"
+    if src_assets.exists():
+        shutil.copytree(src_assets, ASSETS, dirs_exist_ok=True)
+
     (DOCS / "index.html").write_text(render_index(site, services), encoding="utf-8")
     (DOCS / ".nojekyll").write_text("", encoding="utf-8")
 

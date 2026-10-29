@@ -4,6 +4,10 @@ from .meta import MetaConnector
 from .twitter import TwitterConnector
 from .linkedin import LinkedInConnector
 from .bluesky import BlueskyConnector
+from .youtube import YouTubeConnector
+from .threads import ThreadsConnector
+from .pinterest import PinterestConnector
+from .tiktok import TikTokConnector
 from .mock import MockConnector
 
 def get_connector(platform: str, credentials_json: str = "{}") -> BaseSocialConnector:
@@ -43,6 +47,35 @@ def get_connector(platform: str, credentials_json: str = "{}") -> BaseSocialConn
         pwd = creds.get("password")
         if identifier and pwd:
             return BlueskyConnector(identifier=identifier, password=pwd)
+        return MockConnector(platform=platform)
+
+    elif p == "youtube":
+        token = creds.get("access_token")
+        if token:
+            return YouTubeConnector(access_token=token, refresh_token=creds.get("refresh_token"))
+        return MockConnector(platform=platform)
+
+    elif p == "threads":
+        token = creds.get("access_token")
+        user_id = creds.get("user_id")
+        if token and user_id:
+            return ThreadsConnector(access_token=token, user_id=user_id, handle=creds.get("handle"))
+        return MockConnector(platform=platform)
+
+    elif p == "pinterest":
+        token = creds.get("access_token")
+        if token:
+            return PinterestConnector(access_token=token, board_id=creds.get("board_id"))
+        return MockConnector(platform=platform)
+
+    elif p == "tiktok":
+        token = creds.get("access_token")
+        if token:
+            return TikTokConnector(
+                access_token=token,
+                handle=creds.get("handle"),
+                privacy_level=creds.get("privacy_level", "SELF_ONLY"),
+            )
         return MockConnector(platform=platform)
 
     # Fallback to mock connector so test posts succeed
