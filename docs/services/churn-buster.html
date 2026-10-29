@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Churn Buster · Replicas</title>
+<meta name="description" content="Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.">
+<meta property="og:title" content="Churn Buster · Replicas">
+<meta property="og:description" content="Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236ee7b7'/><text x='16' y='23' font-size='19' font-family='monospace' font-weight='bold' text-anchor='middle' fill='%23061010'>R</text></svg>">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html">
+      <span class="logo">R</span>
+      <span>Replicas</span>
+    </a>
+    <div class="nav-links">
+      <a href="../index.html#services">Services</a>
+      <a href="../index.html#how">How it works</a>
+      <a href="../index.html#stack">Tech</a>
+      <a class="gh-btn" href="https://github.com/venugopal1902/replicas">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div class="doc">
+    <aside class="side">
+      <h5>On this page</h5>
+      <ul><li><a href="#overview">Overview</a></li><li><a href="#ui">Interface</a></li><li><a href="#install">Install</a></li><li><a href="#usage">Usage</a></li><li><a href="#api">API reference</a></li><li><a href="#mcp">MCP tools</a></li><li><a href="#monetize">Monetize</a></li><li><a href="#notes">Operational notes</a></li><li><a href="#faq">FAQ</a></li><h5>Source</h5><ul><li><a href="https://github.com/venugopal1902/replicas/tree/main/services/churn-buster">Repository</a></li></ul></ul>
+    </aside>
+    <article class="content">
+      <a class="back" href="../index.html">&larr; All services</a>
+      <h1>Churn Buster</h1>
+      <p class="lede" style="font-size:17px">Failed-payment recovery that cancels the dunning the moment they pay. No $269/mo floor.</p>
+      <div class="doc-meta">
+        <span>Replaces <b>Churn Buster</b></span>
+        <span>Version <b>0.1.0</b></span>
+        <span>License <b>MIT</b></span>
+        <span>Runtime <b>Python 3.12</b></span>
+      </div>
+      <h2 id="overview">Overview<a class="anchor-link" href="#overview">#</a></h2><p>Churn Buster sells failed-payment recovery and cancellation flows starting at $269 a month, scaling with MRR. This engine reproduces the recovery loop: Stripe-shaped webhook intake, dunning campaigns with ordered steps and delays, duplicate suppression, recovery that cancels every pending email, recovery analytics with MRR at risk and recovered MRR, an admin console and a CSV report. Emails are recorded as dry_run unless SMTP is configured, and webhook signature verification activates as soon as STRIPE_WEBHOOK_SECRET is set.</p><div class="pill-row"><span class="chip">replaces Churn Buster</span><span class="chip">v0.1.0</span><span class="chip">MIT</span><span class="chip">Python 3.12</span></div><h3>What you get</h3><ul><li>21/21 checks passing against a live server</li><li>Stripe-shaped webhook with optional HMAC signature check</li><li>Three-step dunning campaign with delays</li><li>Recovery cancels pending sends</li><li>Duplicate failures do not re-enrol a customer</li><li>Recovery rate, MRR at risk, recovered MRR</li><li>Dry-run by default, never fakes a delivery</li></ul><div class="feature-grid"><div class="feature"><h4>Failure intake</h4><p>invoice.payment_failed and charge.failed open a failure and enrol the customer. A simulator does the same without Stripe.</p></div><div class="feature"><h4>Campaigns</h4><p>Ordered steps with per-step delays. The seeded campaign fires at 0, 1 day and 3 days.</p></div><div class="feature"><h4>Recovery</h4><p>invoice.paid or a manual mark flips the failure to recovered and cancels every queued email for it.</p></div><div class="feature"><h4>Analytics</h4><p>Failure counts, recovery rate, MRR at risk and recovered MRR, computed from the tables not estimated.</p></div><div class="feature"><h4>Honest sends</h4><p>SEND_MODE=dry_run records dispatch without transmitting. Nothing is labelled sent unless SMTP was used.</p></div></div><h2 id="ui">Interface<a class="anchor-link" href="#ui">#</a></h2><p>Admin console at / on port 8610.</p><div class="shots"></div><h2 id="install">Install<a class="anchor-link" href="#install">#</a></h2><p>From a clean machine to a running server in four commands.</p><h3>Requirements</h3><ul><li>Python 3.11 or newer</li><li>uv (Astral)</li><li>No Stripe account needed for the simulator or the test suite</li></ul><h3>Step 1 &middot; Clone</h3><p>Get the source.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">git clone https://github.com/venugopal1902/replicas.git
+cd replicas/services/churn-buster</code></pre></div><h3>Step 2 &middot; Install</h3><p>Create the environment.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">uv sync</code></pre></div><h3>Step 3 &middot; Run</h3><p>Admin console on port 8610.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">uv run python scripts/run_server.py</code></pre></div><h3>Run the suite with the server up</h3><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">cd services/churn-buster
+uv run python tests/test_churn_buster.py
+
+# recorded on this machine:
+# ===== 21/21 checks passed =====</code></pre></div><div class="table-wrap"><table><thead><tr><th>Surface</th><th>URL</th></tr></thead><tbody><tr><td>Admin console</td><td><code>http://127.0.0.1:8610/</code></td></tr><tr><td>Health</td><td><code>http://127.0.0.1:8610/health</code></td></tr><tr><td>OpenAPI docs</td><td><code>http://127.0.0.1:8610/docs</code></td></tr><tr><td>Stripe webhook</td><td><code>http://127.0.0.1:8610/webhooks/stripe</code></td></tr></tbody></table></div><h2 id="usage">Usage<a class="anchor-link" href="#usage">#</a></h2><h3>Open a failure without Stripe</h3><p>Creates the customer if needed, opens a failure and queues one email per campaign step.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">TOKEN=$(curl -s -X POST http://127.0.0.1:8610/api/auth/login \
+  -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;email&quot;:&quot;admin@churnbuster.local&quot;,&quot;password&quot;:&quot;churnbuster123&quot;}&#x27; | jq -r .token)
+
+curl -s -X POST http://127.0.0.1:8610/api/simulate/payment-failure \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;customer_email&quot;:&quot;maya@example.com&quot;,&quot;amount_cents&quot;:4900,&quot;mrr_cents&quot;:4900}&#x27;</code></pre></div><h3>Recover with a Stripe-shaped webhook</h3><p>Payment lands, the failure closes and every pending dunning email is cancelled.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">curl -s -X POST http://127.0.0.1:8610/webhooks/stripe \
+  -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;type&quot;:&quot;invoice.paid&quot;,&quot;data&quot;:{&quot;object&quot;:{&quot;customer_email&quot;:&quot;maya@example.com&quot;,&quot;amount&quot;:4900}}}&#x27;</code></pre></div><h2 id="api">API reference<a class="anchor-link" href="#api">#</a></h2><div class="table-wrap"><table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td><span class="method get">GET</span></td><td><code>/health</code></td><td>Status, send mode, open failures, queued emails</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/auth/login</code></td><td>Admin login, returns a bearer token</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/auth/logout</code></td><td>Revoke the session</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/customers</code></td><td>Customers with open-failure counts</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/failures</code></td><td>Failures, optional status filter</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/simulate/payment-failure</code></td><td>Open a failure without Stripe</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/failures/{id}/recover</code></td><td>Mark recovered, cancel pending emails</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/campaigns</code></td><td>Campaigns with their steps</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/emails</code></td><td>Dunning email queue</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/dispatch</code></td><td>Promote due emails to dry_run or sent</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/analytics</code></td><td>Recovery rate, MRR at risk, recovered MRR</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/report.csv</code></td><td>CSV of all failures</td></tr><tr><td><span class="method post">POST</span></td><td><code>/webhooks/stripe</code></td><td>Stripe event intake, signature checked when a secret is set</td></tr></tbody></table></div><h2 id="monetize">Monetize<a class="anchor-link" href="#monetize">#</a></h2><p>The billing layer is built in. Keys carry a plan, a credit balance and an hourly ceiling, so you can resell access without writing auth code.</p><div class="price-grid"><div class="price"><h4>Self-host</h4><b>$0</b><p>The original starts at $269/mo and scales with MRR. Run one instance for your own book of business.</p></div><div class="price"><h4>Agency hosting</h4><b>Your price</b><p>Host per client on your own infrastructure and bill below the incumbent&#x27;s MRR-scaled tier.</p></div><div class="price"><h4>Managed dispatch</h4><b>Add-on</b><p>Wire SMTP and a scheduler, then sell the sending layer as the paid extra.</p></div></div><div class="callout"><b>Ship it publicly:</b> put the service behind Caddy or Nginx with TLS, point a subdomain at it, then hand clients <code>https://api.yourdomain.com/v2</code> and their own key.</div><h2 id="notes">Operational notes<a class="anchor-link" href="#notes">#</a></h2><div class="callout warn"><b>Read before going live.</b> These are the things that break in production.</div><ul><li>SEND_MODE defaults to dry_run. Dispatch records emails, it does not transmit them.</li><li>STRIPE_WEBHOOK_SECRET unset means webhooks are accepted and labelled stripe-sim. Set it in production.</li><li>This engine orchestrates communication and reporting. Charge retries belong to Stripe.</li><li>Cancellation flows, A/B tests and segmentation are not implemented yet.</li></ul><h2 id="faq">FAQ<a class="anchor-link" href="#faq">#</a></h2><details><summary>Does it retry the card charge?</summary><p>No. Stripe owns retry logic. This engine handles the customer communication and the recovery analytics around it.</p></details><details><summary>Will a real Stripe webhook work?</summary><p>Yes once STRIPE_WEBHOOK_SECRET is set. The endpoint accepts the Stripe event shape and verifies the stripe-signature HMAC.</p></details>
+    </article>
+  </div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>&copy; Gubbala Venu Gopal</span>
+    <span>Replicas &middot; self-hosted replacements</span>
+    <span class="sp"><a href="https://github.com/venugopal1902/replicas">Source on GitHub</a></span>
+  </div>
+</footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

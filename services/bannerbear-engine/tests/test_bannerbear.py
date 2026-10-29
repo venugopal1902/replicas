@@ -171,8 +171,15 @@ def test_10_zero_credit_project_returns_402(state):
                   headers=admin, json={"label": "empty"})
     assert key.status_code == 201
     api = {"Authorization": f"Bearer {key.json()['api_key']}"}
+    empty_template = request(state, "POST", "/api/templates", headers=api, json={
+        "name": "Empty Credits Template", "width": 320, "height": 240,
+        "background": "#101820",
+        "layers": [{"name": "title", "type": "text", "text": "No credits",
+                    "x": 20, "y": 20, "font_size": 24, "color": "#ffffff"}],
+    })
+    assert empty_template.status_code == 201
     response = request(state, "POST", "/api/renders", headers=api, json={
-        "template_id": state["template_id"], "overrides": {},
+        "template_id": empty_template.json()["id"], "overrides": {},
     })
     assert response.status_code == 402
     passed("zero-credit project is refused with 402")
@@ -185,7 +192,41 @@ def test_11_admin_console_loads(state):
     passed("admin console loads without CDN or external fonts")
 
 
-def test_12_invalid_image_asset_rejected(state):
+def test_12_uploaded_image_layer_renders(state):
+    import io
+    from PIL import Image
+    headers = {"Authorization": f"Bearer {state['api_key']}"}
+    buffer = io.BytesIO()
+    Image.new("RGBA", (16, 16), (220, 35, 50, 255)).save(buffer, format="PNG")
+    asset = request(state, "POST", "/api/assets", headers=headers,
+                    files={"file": ("solid.png", buffer.getvalue(), "image/png")})
+    assert asset.status_code == 201 and asset.json()["width"] == 16
+    template = request(state, "POST", "/api/templates", headers=headers, json={
+        "name": "Image Layer Test", "width": 160, "height": 120, "background": "#102030",
+        "layers": [{"name": "tile", "type": "image", "asset_id": asset.json()["asset_id"],
+                    "x": 12, "y": 10, "w": 48, "h": 48}],
+    })
+    assert template.status_code == 201
+    job = request(state, "POST", "/api/renders", headers=headers, json={
+        "template_id": template.json()["id"], "overrides": {},
+    })
+    assert job.status_code == 202
+    deadline = time.monotonic() + 8
+    while time.monotonic() < deadline:
+        status_response = request(state, "GET", f"/api/renders/{job.json()['job_id']}", headers=headers)
+        if status_response.json()["status"] in ("done", "failed"):
+            break
+        time.sleep(0.05)
+    assert status_response.json()["status"] == "done"
+    rendered = request(state, "GET", f"/api/renders/{job.json()['job_id']}/download", headers=headers)
+    assert rendered.status_code == 200
+    with Image.open(io.BytesIO(rendered.content)) as result:
+        assert result.size == (160, 120)
+        assert result.convert("RGB").getpixel((20, 20)) == (220, 35, 50)
+    passed("uploaded image layer is composited into a real PNG")
+
+
+def test_13_invalid_image_asset_rejected(state):
     headers = {"Authorization": f"Bearer {state['api_key']}"}
     response = request(state, "POST", "/api/assets", headers=headers,
                        files={"file": ("pixel.png", b"", "image/png")})
@@ -193,7 +234,8 @@ def test_12_invalid_image_asset_rejected(state):
     passed("invalid image asset rejected without 5xx")
 
 
-def test_13_zero_http_5xx(state):
+def test_14_zero_http_5xx(state):
     failures = [(method, path, code) for method, path, code in state["responses"] if code >= 500]
     assert not failures, f"HTTP 5xx responses: {failures}"
     passed(f"zero HTTP 5xx across {len(state['responses'])} requests")
+

@@ -23,7 +23,7 @@ Build order is top-down. Do not start a lower row while a higher row is TODO.
 | — | blotato-engine | Blotato | $29/mo | — | DONE | 52+13+18 | Social API, MCP, 9-platform console. Port 8400 |
 | — | lead-engine | SalesQL | $99+/mo | — | DONE | 18 UI + API sweep | LinkedIn to work email, provider keys. Port 8500 |
 | 1 | back-in-stock | Back in Stock by Amp | $19-99/mo | S/M | DONE | 20 | Restock waitlists, queued notifications, preorders, storefront + admin, CSV. Port 8600 |
-| 2 | churn-buster | Churn Buster | $269+/mo | M | TODO | 0 | Failed-payment dunning, cancel flows, recovery analytics. Stripe key + mail provider needed. Port 8610 |
+| 2 | churn-buster | Churn Buster | $269+/mo | M | DONE | 21 | Dunning campaigns, Stripe-shaped webhook, recovery analytics, admin console, CSV. Port 8610 |
 | 3 | bannerbear-engine | Bannerbear | $49-299/mo | M | TODO | 0 | Template image rendering, async render queue, project-scoped API keys, credit metering. No third-party key needed for core. Port 8620 |
 | 4 | zigpoll-engine | Zigpoll | $29+/mo | M | TODO | 0 | Survey builder, public embed, response store, exports, signed webhooks. Port 8630 |
 | 5 | geckoboard-engine | Geckoboard | $79/319/mo | M | TODO | 0 | Custom datasets push API, widget composition, TV rotation mode. Port 8640 |
@@ -86,6 +86,8 @@ Record the literal numbers. A check that was not executed is not a pass.
 
 Newest first. One line per tick: `HH:MM | action | evidence`
 
+- T+00:45 | churn-buster BUILT AND VERIFIED by chief-bot | 21/21 checks passed live :8610, zero 5xx, Stripe webhook round trip
+- T+00:44 | both delegated children confirmed dead | interrupted after 2 API calls each, 685s, zero files written
 - T+00:28 | back-in-stock BUILT AND VERIFIED by chief-bot directly | 20/20 checks passed against live :8600, zero 5xx
 - T+00:20 | subagents stopped after measuring 98-158s per tool call | 8 min of wall time produced 2 tool calls, zero files
 

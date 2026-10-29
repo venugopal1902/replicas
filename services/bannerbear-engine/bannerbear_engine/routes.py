@@ -18,7 +18,7 @@ from .auth import (AdminContext, ProjectContext, create_admin_session, get_admin
                    get_project_ctx, hash_password, token_hash, verify_password)
 from .config import settings
 from .database import AsyncSessionLocal, get_db
-from .models import (AdminUser, Asset, Project, ProjectAPIKey, RenderJob, Template, Usage)
+from .models import (AdminUser, Asset, Project, ProjectAPIKey, RenderJob, Template, Usage, utc_now)
 from .rendering import inspect_image, render_png
 
 router = APIRouter()
@@ -267,7 +267,7 @@ async def _render_job(job_id: str) -> None:
             await asyncio.to_thread(render_png, template_data, overrides, asset_paths, output)
             job.output_filename = output.name
             job.status = "done"
-            job.completed_at = datetime.utcnow()
+            job.completed_at = utc_now()
             job.error = None
             await db.commit()
         except Exception:
@@ -276,7 +276,7 @@ async def _render_job(job_id: str) -> None:
             project = (await db.execute(select(Project).where(Project.id == project_id))).scalar_one()
             job.status = "failed"
             job.error = "Render failed; credits refunded. Check template and image assets."
-            job.completed_at = datetime.utcnow()
+            job.completed_at = utc_now()
             project.credits += job.credit_cost
             db.add(Usage(project_id=project.id, job_id=job.id, credits=-job.credit_cost,
                          balance_after=project.credits, description="Render failure refund"))

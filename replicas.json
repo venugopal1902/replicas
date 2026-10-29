@@ -887,6 +887,223 @@
         "intro": "Storefront at / and admin console at /admin, served by the API process on port 8600.",
         "images": []
       }
+    },
+    {
+      "slug": "churn-buster",
+      "name": "Churn Buster",
+      "replaces": "Churn Buster",
+      "replaces_url": "https://churnbuster.io/pricing/",
+      "tagline": "Failed-payment recovery that cancels the dunning the moment they pay. No $269/mo floor.",
+      "status": "stable",
+      "version": "0.1.0",
+      "language": "Python 3.12",
+      "license": "MIT",
+      "repo_path": "services/churn-buster",
+      "stack": [
+        "FastAPI",
+        "SQLite",
+        "Uvicorn",
+        "Vanilla JS console"
+      ],
+      "platforms": [],
+      "summary": "Churn Buster sells failed-payment recovery and cancellation flows starting at $269 a month, scaling with MRR. This engine reproduces the recovery loop: Stripe-shaped webhook intake, dunning campaigns with ordered steps and delays, duplicate suppression, recovery that cancels every pending email, recovery analytics with MRR at risk and recovered MRR, an admin console and a CSV report. Emails are recorded as dry_run unless SMTP is configured, and webhook signature verification activates as soon as STRIPE_WEBHOOK_SECRET is set.",
+      "highlights": [
+        "21/21 checks passing against a live server",
+        "Stripe-shaped webhook with optional HMAC signature check",
+        "Three-step dunning campaign with delays",
+        "Recovery cancels pending sends",
+        "Duplicate failures do not re-enrol a customer",
+        "Recovery rate, MRR at risk, recovered MRR",
+        "Dry-run by default, never fakes a delivery"
+      ],
+      "features": [
+        {
+          "title": "Failure intake",
+          "body": "invoice.payment_failed and charge.failed open a failure and enrol the customer. A simulator does the same without Stripe."
+        },
+        {
+          "title": "Campaigns",
+          "body": "Ordered steps with per-step delays. The seeded campaign fires at 0, 1 day and 3 days."
+        },
+        {
+          "title": "Recovery",
+          "body": "invoice.paid or a manual mark flips the failure to recovered and cancels every queued email for it."
+        },
+        {
+          "title": "Analytics",
+          "body": "Failure counts, recovery rate, MRR at risk and recovered MRR, computed from the tables not estimated."
+        },
+        {
+          "title": "Honest sends",
+          "body": "SEND_MODE=dry_run records dispatch without transmitting. Nothing is labelled sent unless SMTP was used."
+        }
+      ],
+      "prereqs": [
+        "Python 3.11 or newer",
+        "uv (Astral)",
+        "No Stripe account needed for the simulator or the test suite"
+      ],
+      "install": [
+        {
+          "title": "Clone",
+          "desc": "Get the source.",
+          "lang": "bash",
+          "code": "git clone https://github.com/venugopal1902/replicas.git\ncd replicas/services/churn-buster"
+        },
+        {
+          "title": "Install",
+          "desc": "Create the environment.",
+          "lang": "bash",
+          "code": "uv sync"
+        },
+        {
+          "title": "Run",
+          "desc": "Admin console on port 8610.",
+          "lang": "bash",
+          "code": "uv run python scripts/run_server.py"
+        }
+      ],
+      "urls": [
+        {
+          "label": "Admin console",
+          "value": "http://127.0.0.1:8610/"
+        },
+        {
+          "label": "Health",
+          "value": "http://127.0.0.1:8610/health"
+        },
+        {
+          "label": "OpenAPI docs",
+          "value": "http://127.0.0.1:8610/docs"
+        },
+        {
+          "label": "Stripe webhook",
+          "value": "http://127.0.0.1:8610/webhooks/stripe"
+        }
+      ],
+      "usage": [
+        {
+          "title": "Open a failure without Stripe",
+          "desc": "Creates the customer if needed, opens a failure and queues one email per campaign step.",
+          "code": "TOKEN=$(curl -s -X POST http://127.0.0.1:8610/api/auth/login \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"email\":\"admin@churnbuster.local\",\"password\":\"churnbuster123\"}' | jq -r .token)\n\ncurl -s -X POST http://127.0.0.1:8610/api/simulate/payment-failure \\\n  -H \"Authorization: Bearer $TOKEN\" -H 'Content-Type: application/json' \\\n  -d '{\"customer_email\":\"maya@example.com\",\"amount_cents\":4900,\"mrr_cents\":4900}'",
+          "lang": "bash"
+        },
+        {
+          "title": "Recover with a Stripe-shaped webhook",
+          "desc": "Payment lands, the failure closes and every pending dunning email is cancelled.",
+          "code": "curl -s -X POST http://127.0.0.1:8610/webhooks/stripe \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"type\":\"invoice.paid\",\"data\":{\"object\":{\"customer_email\":\"maya@example.com\",\"amount\":4900}}}'",
+          "lang": "bash"
+        }
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/health",
+          "desc": "Status, send mode, open failures, queued emails"
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/login",
+          "desc": "Admin login, returns a bearer token"
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/logout",
+          "desc": "Revoke the session"
+        },
+        {
+          "method": "GET",
+          "path": "/api/customers",
+          "desc": "Customers with open-failure counts"
+        },
+        {
+          "method": "GET",
+          "path": "/api/failures",
+          "desc": "Failures, optional status filter"
+        },
+        {
+          "method": "POST",
+          "path": "/api/simulate/payment-failure",
+          "desc": "Open a failure without Stripe"
+        },
+        {
+          "method": "POST",
+          "path": "/api/failures/{id}/recover",
+          "desc": "Mark recovered, cancel pending emails"
+        },
+        {
+          "method": "GET",
+          "path": "/api/campaigns",
+          "desc": "Campaigns with their steps"
+        },
+        {
+          "method": "GET",
+          "path": "/api/emails",
+          "desc": "Dunning email queue"
+        },
+        {
+          "method": "POST",
+          "path": "/api/dispatch",
+          "desc": "Promote due emails to dry_run or sent"
+        },
+        {
+          "method": "GET",
+          "path": "/api/analytics",
+          "desc": "Recovery rate, MRR at risk, recovered MRR"
+        },
+        {
+          "method": "GET",
+          "path": "/api/report.csv",
+          "desc": "CSV of all failures"
+        },
+        {
+          "method": "POST",
+          "path": "/webhooks/stripe",
+          "desc": "Stripe event intake, signature checked when a secret is set"
+        }
+      ],
+      "mcp_tools": [],
+      "verify": {
+        "title": "Run the suite with the server up",
+        "code": "cd services/churn-buster\nuv run python tests/test_churn_buster.py\n\n# recorded on this machine:\n# ===== 21/21 checks passed ====="
+      },
+      "notes": [
+        "SEND_MODE defaults to dry_run. Dispatch records emails, it does not transmit them.",
+        "STRIPE_WEBHOOK_SECRET unset means webhooks are accepted and labelled stripe-sim. Set it in production.",
+        "This engine orchestrates communication and reporting. Charge retries belong to Stripe.",
+        "Cancellation flows, A/B tests and segmentation are not implemented yet."
+      ],
+      "faq": [
+        {
+          "q": "Does it retry the card charge?",
+          "a": "No. Stripe owns retry logic. This engine handles the customer communication and the recovery analytics around it."
+        },
+        {
+          "q": "Will a real Stripe webhook work?",
+          "a": "Yes once STRIPE_WEBHOOK_SECRET is set. The endpoint accepts the Stripe event shape and verifies the stripe-signature HMAC."
+        }
+      ],
+      "monetization": [
+        {
+          "tier": "Self-host",
+          "price": "$0",
+          "detail": "The original starts at $269/mo and scales with MRR. Run one instance for your own book of business."
+        },
+        {
+          "tier": "Agency hosting",
+          "price": "Your price",
+          "detail": "Host per client on your own infrastructure and bill below the incumbent's MRR-scaled tier."
+        },
+        {
+          "tier": "Managed dispatch",
+          "price": "Add-on",
+          "detail": "Wire SMTP and a scheduler, then sell the sending layer as the paid extra."
+        }
+      ],
+      "ui": {
+        "intro": "Admin console at / on port 8610.",
+        "images": []
+      }
     }
   ]
 }

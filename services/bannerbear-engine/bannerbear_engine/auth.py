@@ -2,7 +2,7 @@ import hashlib
 import hmac
 import secrets
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Optional
 
 from fastapi import Depends, Header, HTTPException
@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .database import get_db
-from .models import AdminSession, AdminUser, Project, ProjectAPIKey
+from .models import AdminSession, AdminUser, Project, ProjectAPIKey, utc_now
 
 PBKDF_ROUNDS = 240_000
 
@@ -74,7 +74,7 @@ async def get_admin_ctx(token: str = Depends(get_bearer), db: AsyncSession = Dep
     if not token.startswith("adm_"):
         raise HTTPException(status_code=401, detail="Admin bearer token required")
     session = (await db.execute(select(AdminSession).where(
-        AdminSession.token_hash == token_hash(token), AdminSession.expires_at > datetime.utcnow()
+        AdminSession.token_hash == token_hash(token), AdminSession.expires_at > utc_now()
     ))).scalar_one_or_none()
     if not session:
         raise HTTPException(status_code=401, detail="Invalid or expired admin token")
@@ -89,6 +89,6 @@ async def get_admin_ctx(token: str = Depends(get_bearer), db: AsyncSession = Dep
 async def create_admin_session(user: AdminUser, db: AsyncSession) -> str:
     token = "adm_" + secrets.token_urlsafe(32)
     db.add(AdminSession(user_id=user.id, token_hash=token_hash(token),
-                        expires_at=datetime.utcnow() + timedelta(hours=12)))
+                        expires_at=utc_now() + timedelta(hours=12)))
     await db.commit()
     return token
