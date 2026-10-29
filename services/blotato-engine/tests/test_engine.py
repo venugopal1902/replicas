@@ -46,7 +46,8 @@ async def main() -> None:
         r = await c.get("/v2/users/me/accounts", headers=H)
         accounts = r.json().get("accounts", [])
         platforms = {a["platform"] for a in accounts}
-        check("nine platforms connected", len(accounts) == 9, f"got {len(accounts)}")
+        check("nine platforms connected", len(platforms) == 9 and len(accounts) >= 9,
+              f"{len(accounts)} accounts across {len(platforms)} platforms")
         check(
             "all nine platforms present",
             platforms == {"instagram", "facebook", "twitter", "linkedin", "youtube",

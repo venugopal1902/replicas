@@ -148,8 +148,10 @@ async def _dispatch(name: str, args: Dict[str, Any], user: ApiKeyModel, db: Asyn
 
         if not scheduled:
             connector = get_connector(account.platform, account.credentials_json)
+            from ..connectors import is_simulated as _is_sim
             result = await connector.publish(text, media, {})
             post.status = "published" if result.success else "failed"
+            post.simulated = _is_sim(connector) and result.success
             post.published_at = datetime.utcnow() if result.success else None
             post.platform_post_id = result.post_id
             post.platform_post_url = result.url
@@ -160,6 +162,7 @@ async def _dispatch(name: str, args: Dict[str, Any], user: ApiKeyModel, db: Asyn
         return _text({
             "postSubmissionId": post.id, "status": post.status,
             "platform": post.platform, "url": post.platform_post_url,
+            "simulated": bool(post.simulated),
             "error": post.error_message,
         })
 
@@ -343,8 +346,59 @@ async def _dispatch(name: str, args: Dict[str, Any], user: ApiKeyModel, db: Asyn
                        "inputs": [i["name"] for i in t["inputs"]]} for t in TEMPLATES])
 
     if name == "blotato_create_visual":
-        return _err("Use the REST endpoint POST /v2/videos/from-templates for rendering; "
-                    "it returns public output URLs.")
+        from pathlib import Path
+        from datetime import datetime as _dt
+        from ..config import settings as _settings
+        from ..api.routes_visuals import TEMPLATES as _TEMPLATES
+        from .. import visuals_render as vr
+
+        template_id = args.get("templateId")
+        inputs = args.get("inputs") or {}
+        base = (args.get("baseUrl") or "").rstrip("/")
+        tpl = next((t for t in _TEMPLATES if t["id"] == template_id), None)
+        if not tpl:
+            return _err(f"Unknown template '{template_id}'. Available: " +
+                        ", ".join(t["id"] for t in _TEMPLATES))
+
+        out_dir = Path(_settings.MEDIA_DIR) / "generated"
+        job = f"mcp-{int(_dt.utcnow().timestamp() * 1000)}"
+        palette = inputs.get("palette")
+        files: List[str] = []
+        try:
+            if template_id == "quote-card":
+                files.append(vr.save(vr.render_quote_card(
+                    inputs.get("text", ""), inputs.get("author", ""), palette or "midnight"),
+                    out_dir, f"{job}-quote.png"))
+            elif template_id == "tweet-card":
+                files.append(vr.save(vr.render_tweet_card(
+                    inputs.get("text", ""), inputs.get("name", "Venu"),
+                    inputs.get("handle", "@venugopal1902"), palette or "midnight"),
+                    out_dir, f"{job}-tweet.png"))
+            elif template_id in ("carousel", "tutorial-carousel"):
+                slides = inputs.get("slides") or inputs.get("steps") or []
+                if not slides:
+                    return _err("slides/steps array is required.")
+                total = min(len(slides), 10)
+                for i in range(total):
+                    s = slides[i] if isinstance(slides[i], dict) else {"title": str(slides[i]), "body": ""}
+                    files.append(vr.save(vr.render_carousel_slide(
+                        s.get("title", f"Slide {i + 1}"), s.get("body", ""),
+                        i + 1, total, palette or "paper"),
+                        out_dir, f"{job}-slide-{i + 1}.png"))
+            else:
+                points = inputs.get("points") or []
+                if not points:
+                    return _err("points array is required.")
+                default_pal = "chalk" if "chalk" in template_id else "whiteboard"
+                files.append(vr.save(vr.render_infographic(
+                    inputs.get("title", ""), points, palette or default_pal),
+                    out_dir, f"{job}-infographic.png"))
+        except Exception as exc:  # noqa: BLE001
+            return _err(f"Render failed: {exc}")
+
+        urls = [(f"{base}/media/generated/{f}" if base else f"/media/generated/{f}") for f in files]
+        return _text({"templateId": template_id, "status": "ready",
+                      "files": files, "outputs": urls})
 
     if name == "blotato_check_credits":
         return _text({

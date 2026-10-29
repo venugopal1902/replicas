@@ -10,65 +10,107 @@ from .pinterest import PinterestConnector
 from .tiktok import TikTokConnector
 from .mock import MockConnector
 
+
+class UnconfiguredConnector(BaseSocialConnector):
+    """Returned when credentials were supplied but are incomplete.
+
+    It never pretends to publish. This is what stops a bad token from being
+    reported as a live post.
+    """
+
+    def __init__(self, platform: str, reason: str):
+        self.platform = platform
+        self.reason = reason
+
+    async def publish(self, text, media_urls, target_meta):
+        return PublishResult(False, error=self.reason)
+
+    async def get_analytics(self, external_post_id):
+        return {}
+
+
+# Fields that signal the caller intends to publish for real
+CRED_KEYS = (
+    "access_token", "bearer_token", "oauth_token", "token",
+    "identifier", "password", "refresh_token",
+)
+
+
 def get_connector(platform: str, credentials_json: str = "{}") -> BaseSocialConnector:
+    """Resolve a platform adapter.
+
+    Rules:
+      * provider == "mock"        -> deterministic simulator (explicit demo mode)
+      * real credentials supplied -> the real connector, or a loud failure if incomplete
+      * no credentials at all     -> simulator, so the pipeline stays testable
+    """
     try:
         creds = json.loads(credentials_json) if credentials_json else {}
     except Exception:
         creds = {}
 
     provider = creds.get("provider", "direct")
-    
-    if provider == "mock" or creds.get("mock", False):
-        return MockConnector(platform=platform)
-
     p = platform.lower()
+
+    if provider == "mock" or creds.get("mock") is True:
+        return MockConnector(platform=p)
+
+    supplied = any(creds.get(k) for k in CRED_KEYS)
+
+    def fallback(reason: str) -> BaseSocialConnector:
+        if supplied:
+            return UnconfiguredConnector(p, reason)
+        return MockConnector(platform=p)
+
     if p in ("instagram", "facebook"):
-        access_token = creds.get("access_token")
-        ig_user_id = creds.get("ig_user_id")
-        page_id = creds.get("page_id")
-        if access_token:
-            return MetaConnector(access_token=access_token, ig_user_id=ig_user_id, page_id=page_id)
-        return MockConnector(platform=platform)
+        token = creds.get("access_token")
+        if token and (creds.get("ig_user_id") or creds.get("page_id")):
+            return MetaConnector(access_token=token,
+                                 ig_user_id=creds.get("ig_user_id"),
+                                 page_id=creds.get("page_id"))
+        return fallback(
+            f"{p} needs access_token plus ig_user_id (or page_id). "
+            "Add them to the account credentials."
+        )
 
-    elif p in ("twitter", "x"):
-        bearer = creds.get("bearer_token")
-        if bearer:
-            return TwitterConnector(bearer_token=bearer)
-        return MockConnector(platform=platform)
+    if p in ("twitter", "x"):
+        token = (creds.get("access_token") or creds.get("oauth_token")
+                 or creds.get("bearer_token"))
+        if token:
+            return TwitterConnector(bearer_token=token, oauth_token=token)
+        return fallback("twitter needs access_token (OAuth 2 user token with write scope).")
 
-    elif p == "linkedin":
+    if p == "linkedin":
         token = creds.get("access_token")
         if token:
             return LinkedInConnector(access_token=token, author_urn=creds.get("author_urn"))
-        return MockConnector(platform=platform)
+        return fallback("linkedin needs access_token and author_urn.")
 
-    elif p == "bluesky":
-        identifier = creds.get("identifier")
-        pwd = creds.get("password")
-        if identifier and pwd:
-            return BlueskyConnector(identifier=identifier, password=pwd)
-        return MockConnector(platform=platform)
+    if p == "bluesky":
+        if creds.get("identifier") and creds.get("password"):
+            return BlueskyConnector(identifier=creds["identifier"], password=creds["password"])
+        return fallback("bluesky needs identifier plus an app password.")
 
-    elif p == "youtube":
+    if p == "youtube":
         token = creds.get("access_token")
         if token:
             return YouTubeConnector(access_token=token, refresh_token=creds.get("refresh_token"))
-        return MockConnector(platform=platform)
+        return fallback("youtube needs an OAuth access_token with the upload scope.")
 
-    elif p == "threads":
-        token = creds.get("access_token")
-        user_id = creds.get("user_id")
-        if token and user_id:
-            return ThreadsConnector(access_token=token, user_id=user_id, handle=creds.get("handle"))
-        return MockConnector(platform=platform)
+    if p == "threads":
+        if creds.get("access_token") and creds.get("user_id"):
+            return ThreadsConnector(access_token=creds["access_token"],
+                                    user_id=creds["user_id"],
+                                    handle=creds.get("handle"))
+        return fallback("threads needs access_token plus user_id.")
 
-    elif p == "pinterest":
+    if p == "pinterest":
         token = creds.get("access_token")
         if token:
             return PinterestConnector(access_token=token, board_id=creds.get("board_id"))
-        return MockConnector(platform=platform)
+        return fallback("pinterest needs access_token and board_id.")
 
-    elif p == "tiktok":
+    if p == "tiktok":
         token = creds.get("access_token")
         if token:
             return TikTokConnector(
@@ -76,7 +118,11 @@ def get_connector(platform: str, credentials_json: str = "{}") -> BaseSocialConn
                 handle=creds.get("handle"),
                 privacy_level=creds.get("privacy_level", "SELF_ONLY"),
             )
-        return MockConnector(platform=platform)
+        return fallback("tiktok needs access_token with content posting scope.")
 
-    # Fallback to mock connector so test posts succeed
-    return MockConnector(platform=platform)
+    return fallback(f"Unsupported platform '{platform}'.")
+
+
+def is_simulated(connector: BaseSocialConnector) -> bool:
+    """True when the adapter is the deterministic simulator, so callers can label output."""
+    return isinstance(connector, MockConnector)

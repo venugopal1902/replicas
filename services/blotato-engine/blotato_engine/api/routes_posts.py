@@ -7,7 +7,7 @@ from sqlalchemy import select, desc
 from ..database import get_db
 from ..models import ApiKeyModel, SocialAccountModel, PostModel
 from ..auth import get_current_user
-from ..connectors import get_connector
+from ..connectors import get_connector, is_simulated
 
 router = APIRouter(prefix="/v2", tags=["publishing"])
 
@@ -65,8 +65,10 @@ async def create_post(
     await db.refresh(post)
 
     # If immediate execution:
+    simulated = False
     if not scheduled_dt:
         connector = get_connector(account.platform, account.credentials_json)
+        simulated = is_simulated(connector)
         result = await connector.publish(text=text, media_urls=media_urls, target_meta=target)
         
         if result.success:
@@ -74,6 +76,7 @@ async def create_post(
             post.published_at = datetime.utcnow()
             post.platform_post_id = result.post_id
             post.platform_post_url = result.url
+            post.simulated = simulated
             # Deduct credit if applicable
             if user.plan != "admin" and user.credits > 0:
                 user.credits -= 1
@@ -92,7 +95,8 @@ async def create_post(
         "scheduledTime": post.scheduled_time.isoformat() if post.scheduled_time else None,
         "publishedAt": post.published_at.isoformat() if post.published_at else None,
         "url": post.platform_post_url,
-        "errorMessage": post.error_message
+        "errorMessage": post.error_message,
+        "simulated": bool(post.simulated)
     }
 
 @router.get("/posts/{postSubmissionId}")
@@ -121,7 +125,8 @@ async def get_post(
         "scheduledTime": post.scheduled_time.isoformat() if post.scheduled_time else None,
         "publishedAt": post.published_at.isoformat() if post.published_at else None,
         "url": post.platform_post_url,
-        "errorMessage": post.error_message
+        "errorMessage": post.error_message,
+        "simulated": bool(post.simulated)
     }
 
 @router.get("/posts")
@@ -151,6 +156,7 @@ async def list_posts(
                 "scheduledTime": p.scheduled_time.isoformat() if p.scheduled_time else None,
                 "publishedAt": p.published_at.isoformat() if p.published_at else None,
                 "url": p.platform_post_url,
+                "simulated": bool(p.simulated),
                 "createdAt": p.created_at.isoformat() if p.created_at else None
             }
             for p in posts

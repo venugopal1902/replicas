@@ -244,8 +244,9 @@
         { "tier": "Agency", "price": "$99/mo", "detail": "Unlimited credits, 10,000 req/hr, white-label docs. For teams reselling social automation." }
       ],
       "notes": [
-        "Publishing to real platforms needs approved developer apps. Meta needs instagram_content_publish and pages_manage_posts; X needs a paid write tier; TikTok needs content posting access. Until then connectors raise a clear error rather than silently succeeding.",
-        "Every connector falls back to a deterministic mock when credentials are absent, so the whole pipeline stays testable before app review.",
+        "Credentials are strict on purpose. If you supply real credentials and they are incomplete or rejected, the post fails with the platform's own error. The engine never reports a fake publish. Responses carry a `simulated` flag so demo output is always distinguishable from live output.",
+        "Publishing to real platforms needs approved developer apps. Meta needs instagram_content_publish and pages_manage_posts; X needs a paid write tier; TikTok needs content posting access.",
+        "Accounts seeded with provider \"mock\" publish through a deterministic simulator. That keeps the whole pipeline testable before app review, and every simulated post is labelled.",
         "Media must be publicly reachable URLs for platform APIs. Use POST /v2/media/upload to host it locally, then expose the service behind TLS.",
         "SQLite is the default store. For multi-instance deployments switch DATABASE_URL to Postgres.",
         "Never expose port 8400 directly. Put it behind Nginx or Caddy with TLS before selling access, and change MASTER_API_KEY.",

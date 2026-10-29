@@ -62,6 +62,7 @@ class PostModel(Base):
     error_message = Column(Text, nullable=True)
     target_meta_json = Column(Text, default="{}")
     retry_count = Column(Integer, default=0)
+    simulated = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("ApiKeyModel", back_populates="posts")

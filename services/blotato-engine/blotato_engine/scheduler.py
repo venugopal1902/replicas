@@ -5,7 +5,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select
 from .database import AsyncSessionLocal
 from .models import PostModel, SocialAccountModel, ApiKeyModel
-from .connectors import get_connector
+from .connectors import get_connector, is_simulated
 
 logger = logging.getLogger("blotato.scheduler")
 scheduler = AsyncIOScheduler()
@@ -47,6 +47,7 @@ async def check_and_publish_scheduled_posts():
                     post.published_at = datetime.utcnow()
                     post.platform_post_id = result.post_id
                     post.platform_post_url = result.url
+                    post.simulated = is_simulated(connector)
                 else:
                     post.status = "failed"
                     post.error_message = result.error

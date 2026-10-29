@@ -26,6 +26,13 @@ SEED_ACCOUNTS = [
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Lightweight migration for databases created before the column existed
+        try:
+            await conn.exec_driver_sql(
+                "ALTER TABLE posts ADD COLUMN simulated BOOLEAN DEFAULT 0"
+            )
+        except Exception:
+            pass
 
     async with AsyncSessionLocal() as session:
         result = await session.execute(
