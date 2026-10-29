@@ -13,20 +13,21 @@ from .models import (
 engine = create_async_engine(settings.DATABASE_URL, echo=settings.DEBUG, future=True)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
-# Real domains so MX verification resolves during demos
+# Real domains so MX verification resolves during demos. Names are real companies,
+# people are fictional. Emails are still pattern candidates verified by MX, never scraped.
 COMPANIES = [
-    ("Northvale", "northvale.io", "SaaS", "201-500", "London, UK", 2016),
-    ("Kestrelpay", "kestrelpay.com", "Fintech", "51-200", "London, UK", 2018),
-    ("Loambridge", "loambridge.co.uk", "Consulting", "11-50", "Manchester, UK", 2014),
-    ("Quillbyte", "quillbyte.io", "SaaS", "51-200", "Berlin, Germany", 2019),
-    ("Fernpay", "fernpay.co", "Fintech", "11-50", "Amsterdam, NL", 2020),
-    ("Tallyfin", "tallyfin.io", "Fintech", "201-500", "Dublin, Ireland", 2015),
-    ("Brackenpay", "brackenpay.io", "Fintech", "51-200", "London, UK", 2017),
-    ("Mossgrove", "mossgrove.io", "SaaS", "201-500", "Edinburgh, UK", 2012),
     ("Stripe", "stripe.com", "Fintech", "1000+", "San Francisco, US", 2010),
     ("Figma", "figma.com", "Design", "1000+", "San Francisco, US", 2012),
     ("Linear", "linear.app", "SaaS", "51-200", "San Francisco, US", 2019),
     ("Vercel", "vercel.com", "Cloud", "201-500", "San Francisco, US", 2015),
+    ("Airtable", "airtable.com", "SaaS", "201-500", "San Francisco, US", 2012),
+    ("GitHub", "github.com", "Cloud", "1000+", "San Francisco, US", 2008),
+    ("Atlassian", "atlassian.com", "SaaS", "1000+", "Sydney, AU", 2002),
+    ("HubSpot", "hubspot.com", "SaaS", "1000+", "Boston, US", 2006),
+    ("Datadog", "datadoghq.com", "Cloud", "1000+", "New York, US", 2010),
+    ("Shopify", "shopify.com", "E-commerce", "1000+", "Ottawa, CA", 2006),
+    ("Intercom", "intercom.com", "SaaS", "201-500", "Dublin, IE", 2011),
+    ("Zapier", "zapier.com", "SaaS", "201-500", "Remote", 2011),
 ]
 
 TITLES = [
@@ -61,6 +62,21 @@ async def init_db() -> None:
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    # Light additive migrations so existing SQLite databases pick up new columns.
+    # Each ALTER is idempotent: a duplicate column raises and is ignored.
+    for statement in (
+        "ALTER TABLE workspaces ADD COLUMN hunter_key VARCHAR(255)",
+        "ALTER TABLE workspaces ADD COLUMN apollo_key VARCHAR(255)",
+        "ALTER TABLE workspaces ADD COLUMN pdl_key VARCHAR(255)",
+        "ALTER TABLE workspaces ADD COLUMN provider_status VARCHAR(40) DEFAULT 'unconfigured'",
+        "ALTER TABLE enrichment_jobs ADD COLUMN rows_json TEXT",
+    ):
+        try:
+            async with engine.begin() as conn:
+                await conn.exec_driver_sql(statement)
+        except Exception:
+            pass
 
     async with AsyncSessionLocal() as session:
         existing = (await session.execute(select(User).where(User.email == settings.ADMIN_EMAIL))).scalar_one_or_none()

@@ -58,13 +58,13 @@ Expected: `20/20 UI checks passed`.
 
 ## What works
 
-- **Prospector:** seeded fictional contacts, filters, prompt-to-filter shortcuts, pagination. Search costs no credits.
+- **Prospector:** seeded contacts, one free-text box (matches name, company, title, domain, location or LinkedIn slug), structured filters, pagination. Search costs no credits.
 - **Reveal:** generates and checks work-email candidates using a name/domain. One credit only when an email is returned; repeat reveals cost zero.
-- **Provider enrichment:** optional Hunter, Apollo and People Data Labs keys. Provider results can include personal email and phone.
-- **LinkedIn URLs:** URL parsing and job workflows. No profile scraping; provider credentials are required for real data.
-- **CSV:** URL, lead identity and reverse-email modes; poll jobs and download output.
+- **Provider enrichment:** optional Hunter, Apollo and People Data Labs keys, stored per workspace in the UI. Provider results can include personal email and phone.
+- **LinkedIn URLs:** a company name or domain is **required** alongside the URL. A LinkedIn slug carries no company domain, so without one there is no pattern to verify and the row reports `needs company or domain`.
+- **CSV:** URL, lead identity and reverse-email modes; poll jobs and download output. Every job now exposes per-row outcomes at `GET /api/jobs/{id}/rows`.
 - **Verifier:** syntax, role-account and MX checks; optional SMTP probe is off by default. Verifier credits are separate.
-- **Lists:** create folders, add/remove contacts, see counts.
+- **Lists:** create folders with a colour, add/remove contacts, see counts. The colour renders as a swatch in the folder row.
 - **Campaigns:** sequences up to 10 steps, recipients and open/click tracking. **Send is simulation-only by default.**
 - **API and MCP:** workspace API keys and six MCP tools (`search_prospects`, `reveal_contact`, `enrich_linkedin`, `verify_email`, `list_folders`, `check_credits`).
 - **Login/workspaces:** PBKDF2 password hashes, sessions, scoped data, quota meters.
@@ -83,7 +83,14 @@ An MX record only proves the domain accepts mail, not that a mailbox exists. The
 candidates are labeled **risky**, not verified. To get genuinely provider-backed personal email or
 phone data, configure your own account/API key. Never treat a generated candidate as a confirmed address.
 
-### Provider configuration (`.env`)
+### Provider configuration
+
+Two ways, both supported. Keys saved in the UI win over `.env`.
+
+**In the app (recommended):** Settings → Data providers → paste Hunter / Apollo / PDL keys → Save keys →
+Test connection. Keys are stored on the workspace row and read back masked (`••••1234`), never in full.
+
+**In `.env`:** used as the fallback when the workspace has no key.
 
 ```dotenv
 HUNTER_API_KEY=
@@ -92,6 +99,23 @@ PDL_API_KEY=
 ```
 
 The engine calls providers only when a key is present. It does not scrape LinkedIn pages.
+
+### Resetting demo data
+
+Automated tests and manual probing run against the same SQLite file the app serves, so they can leave
+duplicate contacts and stray folders behind. To get back to a clean, seeded demo state:
+
+```bash
+# stop the server first, Windows holds the file open
+uv run python scripts/reset_demo_data.py --force
+```
+
+This deletes `data/lead_engine.db`, reseeds 12 companies and 48 contacts on real mail-capable domains,
+and restores the default login. Then set your own password with `scripts/set_password.py`.
+
+If demo reveals return nothing, the usual cause is a company domain with no MX record. Seeded domains
+are all MX-capable; check a custom one with `uv run python -c "import asyncio;from lead_engine.enrichment
+import mx_lookup;print(asyncio.run(mx_lookup('example.com')))"`.
 
 ### SMTP probing
 

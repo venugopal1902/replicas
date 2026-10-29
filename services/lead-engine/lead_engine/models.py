@@ -37,6 +37,10 @@ class Workspace(Base):
     recipients_limit = Column(Integer, default=10000)   # campaign recipients / month
     recipients_used = Column(Integer, default=0)
     api_calls_limit = Column(Integer, default=1500)     # per day
+    hunter_key = Column(String(255), nullable=True)
+    apollo_key = Column(String(255), nullable=True)
+    pdl_key = Column(String(255), nullable=True)
+    provider_status = Column(String(40), default="unconfigured")
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -170,6 +174,7 @@ class EnrichmentJob(Base):
     credits_spent = Column(Integer, default=0)
     input_path = Column(String(600))
     output_path = Column(String(600))
+    rows_json = Column(Text, nullable=True)
     error = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     finished_at = Column(DateTime, nullable=True)

@@ -16,6 +16,7 @@ router = APIRouter(prefix="/api", tags=["search"])
 
 class SearchBody(BaseModel):
     prompt: Optional[str] = None
+    q: Optional[str] = None
     filters: Optional[Dict[str, Any]] = None
     page: int = 1
     pageSize: int = 20
@@ -29,6 +30,24 @@ async def search(body: SearchBody, ctx: Ctx = Depends(get_ctx), db: AsyncSession
 
     def like(field, value):
         return field.ilike(f"%{value}%")
+
+    # Free-text match across the fields a recruiter actually types: a name, a company,
+    # a title, a domain or a LinkedIn slug. Without this the box silently returned everything.
+    term = (body.q or "").strip()
+    if term:
+        needle = f"%{term}%"
+        query = query.where(
+            or_(
+                Contact.first_name.ilike(needle),
+                Contact.last_name.ilike(needle),
+                Contact.company_name.ilike(needle),
+                Contact.title.ilike(needle),
+                Contact.domain.ilike(needle),
+                Contact.location.ilike(needle),
+                Contact.linkedin_url.ilike(needle),
+                Contact.work_email.ilike(needle),
+            )
+        )
 
     if filters.get("title"):
         query = query.where(like(Contact.title, filters["title"]))
@@ -86,9 +105,11 @@ async def search(body: SearchBody, ctx: Ctx = Depends(get_ctx), db: AsyncSession
                 "headcount": c.headcount,
                 "location": c.location,
                 "linkedinUrl": c.linkedin_url,
+                "domain": c.domain,
                 "revealed": bool(c.revealed),
                 "workEmailMasked": contact_dict(c)["workEmailMasked"],
                 "directEmailMasked": contact_dict(c)["directEmailMasked"],
+                "hasDirectEmail": bool(c.direct_email),
                 "hasPhone": bool(c.phone),
             }
             for c in rows

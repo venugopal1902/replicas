@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import settings
 from .database import init_db
-from .routes import auth_routes, workspace, contacts, search, folders, enrich, verify, mcp
+from .routes import auth_routes, workspace, contacts, search, folders, enrich, verify, mcp, providers
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_DIR = BASE_DIR / "static"
@@ -49,6 +49,7 @@ app.include_router(contacts.router)
 app.include_router(search.router)
 app.include_router(folders.router)
 app.include_router(enrich.router)
+app.include_router(providers.router)
 app.include_router(verify.router)
 app.include_router(mcp.router)
 

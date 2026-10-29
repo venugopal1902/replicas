@@ -61,12 +61,19 @@ def _job_dict(j: EnrichmentJob) -> Dict[str, Any]:
     }
 
 
-def _providers() -> Dict[str, str]:
+def providers_for(workspace: Optional[Workspace] = None) -> Dict[str, str]:
+    hunter = (getattr(workspace, "hunter_key", None) if workspace else None) or settings.HUNTER_API_KEY or ""
+    apollo = (getattr(workspace, "apollo_key", None) if workspace else None) or settings.APOLLO_API_KEY or ""
+    pdl = (getattr(workspace, "pdl_key", None) if workspace else None) or settings.PDL_API_KEY or ""
     return {
-        "hunter": settings.HUNTER_API_KEY,
-        "apollo": settings.APOLLO_API_KEY,
-        "pdl": settings.PDL_API_KEY,
+        "hunter": hunter,
+        "apollo": apollo,
+        "pdl": pdl,
     }
+
+
+def _providers(workspace: Optional[Workspace] = None) -> Dict[str, str]:
+    return providers_for(workspace)
 
 
 async def _enrich_one(session: AsyncSession, workspace: Workspace, contact: Contact) -> Dict[str, Any]:
@@ -77,7 +84,7 @@ async def _enrich_one(session: AsyncSession, workspace: Workspace, contact: Cont
         company_name=contact.company_name,
         domain=contact.domain,
         linkedin_url=contact.linkedin_url,
-        providers=_providers(),
+        providers=providers_for(workspace),
     )
 
     found = bool(result.get("workEmail") or result.get("directEmail"))
@@ -301,12 +308,15 @@ async def _run_job(job_id: str) -> None:
             out_path = settings.DATA_DIR / "jobs" / f"{job.id}.csv"
             await _write_csv(out_path, rows)
             job.output_path = str(out_path)
+            job.rows_json = json.dumps(rows[:500])
             job.status = "done"
             job.finished_at = datetime.utcnow()
 
         except Exception as exc:  # noqa: BLE001
             job.status = "failed"
             job.error = str(exc)
+            if rows:
+                job.rows_json = json.dumps(rows[:500])
             job.finished_at = datetime.utcnow()
 
         await session.commit()
@@ -411,6 +421,31 @@ async def get_job(job_id: str, ctx: Ctx = Depends(get_ctx), db: AsyncSession = D
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return _job_dict(job)
+
+
+@router.get("/jobs/{job_id}/rows")
+async def get_job_rows(job_id: str, ctx: Ctx = Depends(get_ctx), db: AsyncSession = Depends(get_db)):
+    job = (await db.execute(
+        select(EnrichmentJob).where(EnrichmentJob.id == job_id,
+                                    EnrichmentJob.workspace_id == ctx.workspace.id)
+    )).scalar_one_or_none()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    items: List[Dict[str, Any]] = []
+    if job.rows_json:
+        try:
+            items = json.loads(job.rows_json)
+        except Exception:
+            items = []
+    elif job.output_path and Path(job.output_path).exists():
+        try:
+            with open(job.output_path, "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                items = [row for i, row in enumerate(reader) if i < 500]
+        except Exception:
+            items = []
+    return {"items": items, "total": len(items)}
 
 
 @router.get("/jobs/{job_id}/download")

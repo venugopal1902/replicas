@@ -471,6 +471,7 @@
         method: "POST",
         body: {
           prompt: prompt || undefined,
+          q: prompt || undefined,
           filters,
           page: state.search.page,
           pageSize: state.search.pageSize,
@@ -617,7 +618,14 @@
       if (!spent && !found) toast("No email found, no credit used", "info");
       else if (!spent) toast("Already revealed — no credit used", "info");
       else toast("Revealed. 1 credit used.", "success");
-      go("#/contact/" + id);
+      // Update the contact in state and re-paint results so the user stays on the page
+      if (data.contact && state.search.items) {
+        const idx = state.search.items.findIndex(c => c.id === id);
+        if (idx >= 0) {
+          state.search.items[idx] = Object.assign(state.search.items[idx], data.contact, { revealed: true });
+          paintSearchResults();
+        }
+      }
     } catch (err) {
       if (btn) {
         btn.disabled = false;
@@ -702,14 +710,23 @@
       "</span></div>" +
       '<div class="kv-row"><span class="kv-key">Status</span><span class="kv-val">' +
       badge(contact.directEmailStatus || "unavailable") +
-      "</span></div></div>" +
+      "</span></div>" +
+      (contact.directEmail
+        ? ""
+        : '<p class="hint hint-small">Requires a data provider. Add a Hunter, Apollo or PDL key under ' +
+          "Settings &rarr; Data providers.</p>") +
+      "</div>" +
       '<div class="panel"><div class="panel-header"><h4>Phone</h4></div>' +
       '<div class="kv-row"><span class="kv-key">Number</span><span class="kv-val mono">' +
       esc(contact.phone || "—") +
       "</span></div>" +
       '<div class="kv-row"><span class="kv-key">Source</span><span class="kv-val">' +
       esc(contact.phoneSource || "—") +
-      "</span></div></div></div>" +
+      "</span></div>" +
+      (contact.phone
+        ? ""
+        : '<p class="hint hint-small">Requires a data provider. Phone numbers are never generated from patterns.</p>') +
+      "</div></div>" +
       '<div class="detail-section">' +
       '<div class="panel"><div class="panel-header"><h4>Company</h4></div>' +
       '<div class="kv-row"><span class="kv-key">Name</span><span class="kv-val">' +
@@ -925,8 +942,23 @@
     $("#enrich-body").innerHTML =
       '<div class="panel"><div class="field"><label for="li-urls">One LinkedIn profile URL per line</label>' +
       '<textarea class="textarea" id="li-urls" rows="8" placeholder="https://www.linkedin.com/in/..."></textarea></div>' +
-      '<div class="btn-group" style="margin-top:12px"><button class="btn primary" id="li-go">Start enrichment</button></div>' +
+      '<div class="form-grid" style="margin-top:12px">' +
+      '<div class="field"><label for="li-company">Company name</label>' +
+      '<input class="input" id="li-company" placeholder="Stripe">' +
+      '<p class="hint hint-small">Required for profiles that are not already in your database. A LinkedIn URL alone ' +
+      "does not reveal the company domain, and without a domain no email pattern can be verified.</p></div>" +
+      '<div class="field"><label for="li-domain">Company domain (optional, most accurate)</label>' +
+      '<input class="input" id="li-domain" placeholder="stripe.com">' +
+      '<p class="hint hint-small">Overrides the domain derived from the company name.</p></div></div>' +
+      '<div class="btn-group" style="margin-top:12px"><button class="btn primary" id="li-go">Start enrichment</button>' +
+      '<button class="btn ghost" id="li-demo">Load example</button></div>' +
       '<p id="li-error" class="form-error"></p></div>';
+    $("#li-demo").addEventListener("click", () => {
+      $("#li-urls").value = "https://www.linkedin.com/in/maya-okafor-1a2b";
+      $("#li-company").value = "Stripe";
+      $("#li-domain").value = "stripe.com";
+      $("#li-error").textContent = "";
+    });
     $("#li-go").addEventListener("click", async () => {
       const urls = $("#li-urls")
         .value.split(/\r?\n/)
@@ -936,9 +968,16 @@
         $("#li-error").textContent = "Paste at least one URL.";
         return;
       }
+      const companyHint = $("#li-company").value.trim();
+      const domain = $("#li-domain").value.trim();
+      if (!companyHint && !domain) {
+        $("#li-error").textContent =
+          "Add a company name or domain. Without one, LinkedIn URLs cannot be resolved to an email.";
+        return;
+      }
       $("#li-error").textContent = "";
       try {
-        const job = await api("/api/enrich/linkedin", { method: "POST", body: { urls } });
+        const job = await api("/api/enrich/linkedin", { method: "POST", body: { urls, companyHint, domain } });
         state.enrichJob = job;
         toast("Job queued", "success");
         paintJob(job);
@@ -1019,11 +1058,64 @@
       (done && (job.downloadUrl || job.status === "done")
         ? '<div class="btn-group" style="margin-top:12px"><button class="btn secondary" id="job-download">Download CSV</button></div>'
         : "") +
+      '<div id="job-rows"></div>' +
       "</div>";
     const dl = $("#job-download");
     if (dl) {
       dl.addEventListener("click", () => downloadJob(job.id));
     }
+    if (done) renderJobRows(job.id);
+  }
+
+  const OUTCOMES = {
+    found: "email found",
+    not_found: "no email found",
+    needs_company: "needs company or domain",
+    invalid_url: "invalid URL",
+    error: "error",
+  };
+
+  async function renderJobRows(jobId) {
+    const host = $("#job-rows");
+    if (!host) return;
+    let data;
+    try {
+      data = await api("/api/jobs/" + encodeURIComponent(jobId) + "/rows");
+    } catch (err) {
+      host.innerHTML = "";
+      return;
+    }
+    const items = (data && data.items) || [];
+    if (!items.length) {
+      host.innerHTML = "";
+      return;
+    }
+    host.innerHTML =
+      '<h4 style="margin:16px 0 8px">Results per URL</h4>' +
+      '<div class="table-wrap"><table><thead><tr><th>Person</th><th>Company</th><th>Email</th>' +
+      "<th>Status</th><th>Outcome</th></tr></thead><tbody>" +
+      items
+        .map((r) => {
+          const outcome = r.outcome || (r.work_email ? "found" : "not_found");
+          const cls = outcome === "found" ? "badge success" : outcome === "not_found" ? "badge muted" : "badge warn";
+          return (
+            "<tr><td>" +
+            esc(r.name || [r.first_name, r.last_name].filter(Boolean).join(" ") || "—") +
+            "</td><td>" +
+            esc(r.company || "—") +
+            "</td><td>" +
+            esc(r.work_email || "—") +
+            "</td><td>" +
+            esc(r.status || "—") +
+            '</td><td><span class="' +
+            cls +
+            '">' +
+            esc(OUTCOMES[outcome] || outcome) +
+            "</span></td></tr>"
+          );
+        })
+        .join("") +
+      "</tbody></table></div>";
   }
 
   async function pollJob(id) {
@@ -1624,6 +1716,19 @@
       '<div class="kv-row"><span class="kv-key">API calls / day</span><span class="kv-val">' +
       fmt(ws.apiCallsLimit) +
       "</span></div></div></div>" +
+      '<div class="panel"><div class="panel-header"><h4>Data providers</h4></div>' +
+      '<p class="hint hint-small">Work emails are found by pattern and verified against the domain MX record, so they ' +
+      "never need a key. Personal email and phone reveal require a data provider. Without one those columns stay empty " +
+      "by design.</p>" +
+      '<div class="field"><label for="pv-hunter">Hunter API key</label>' +
+      '<input class="input" id="pv-hunter" placeholder="not configured" autocomplete="off"></div>' +
+      '<div class="field"><label for="pv-apollo">Apollo API key</label>' +
+      '<input class="input" id="pv-apollo" placeholder="not configured" autocomplete="off"></div>' +
+      '<div class="field"><label for="pv-pdl">People Data Labs API key</label>' +
+      '<input class="input" id="pv-pdl" placeholder="not configured" autocomplete="off"></div>' +
+      '<div class="btn-group" style="margin-top:12px"><button class="btn primary" id="pv-save">Save keys</button>' +
+      '<button class="btn ghost" id="pv-test">Test connection</button></div>' +
+      '<p id="pv-status" class="hint hint-small"></p></div>' +
       '<div class="panel" style="padding:0"><div class="panel-header" style="padding:16px 16px 0"><h4>Credit ledger</h4></div>' +
       '<div class="table-wrap" style="border:none"><table><thead><tr><th>When</th><th>Pool</th><th>Reason</th><th>Delta</th><th>Balance</th></tr></thead><tbody>' +
       (events || '<tr><td colspan="5" class="loading-row">No credit events yet.</td></tr>') +
@@ -1640,6 +1745,60 @@
       state.workspace = null;
       showLogin("");
     });
+
+    // ---- data providers ----
+    const PV_FIELDS = { hunter: "#pv-hunter", apollo: "#pv-apollo", pdl: "#pv-pdl" };
+    async function loadProviders() {
+      const status = $("#pv-status");
+      if (!status) return;
+      try {
+        const data = await api("/api/providers");
+        (data.items || []).forEach((p) => {
+          const el = $(PV_FIELDS[p.name]);
+          if (el) el.placeholder = p.configured ? "configured " + (p.masked || "") : "not configured";
+        });
+        status.textContent = data.anyConfigured
+          ? "A provider is connected: personal email and phone reveal are enabled."
+          : "No provider connected: only MX-verified work emails are available.";
+      } catch (err) {
+        status.textContent = "Provider settings are unavailable on this build.";
+      }
+    }
+    $("#pv-save").addEventListener("click", async () => {
+      const status = $("#pv-status");
+      const body = {};
+      Object.entries(PV_FIELDS).forEach(([name, sel]) => {
+        const v = $(sel).value.trim();
+        if (v) body[name] = v;
+        $(sel).value = "";
+      });
+      if (!Object.keys(body).length) {
+        status.textContent = "Enter at least one key to save.";
+        return;
+      }
+      try {
+        await api("/api/providers", { method: "PUT", body });
+        toast("Provider keys saved", "success");
+        await loadProviders();
+      } catch (err) {
+        status.textContent = err.message;
+        toast(err.message, "error");
+      }
+    });
+    $("#pv-test").addEventListener("click", async () => {
+      const status = $("#pv-status");
+      status.textContent = "Testing…";
+      try {
+        const res = await api("/api/providers/test", { method: "POST", body: {} });
+        const parts = (res.results || []).map(
+          (r) => r.provider + ": " + (r.reachable ? "reachable" : "unreachable") + (r.detail ? " (" + r.detail + ")" : "")
+        );
+        status.textContent = parts.length ? parts.join(" · ") : "No provider configured to test.";
+      } catch (err) {
+        status.textContent = err.message;
+      }
+    });
+    loadProviders();
   }
 
   /* ---------------- Boot ---------------- */
