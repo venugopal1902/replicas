@@ -674,6 +674,13 @@ def main() -> None:
         out.write_text(render_service(site, s), encoding="utf-8")
         print(f"  rendered services/{s['slug']}.html")
 
+    for s in services:
+        if s.get("slug") == "lead-engine":
+            out = DOCS / "services" / "lead-engine.html"
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(render_service(site, s), encoding="utf-8")
+            print("  rendered services/lead-engine.html")
+
     print(f"Built {len(services)} service page(s) into {DOCS}")
 
 

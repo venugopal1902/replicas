@@ -24,7 +24,8 @@ Two uses:
 
 | Service | Replaces | Stack | Docs |
 | --- | --- | --- | --- |
-| [Blotato Engine](services/blotato-engine) | [Blotato](https://www.blotato.com/) | Python 3.12 / FastAPI / SQLite | [Read](https://venugopal1902.github.io/replicas/services/blotato-engine.html) |
+| [Blotato Engine](services/blotato-engine) | [Blotato](https://www.blotato.com/) | Python 3.12 / FastAPI / SQLite | [Read](https://presto-torque-aqk3.here.now/services/blotato-engine.html) |
+| [Lead Engine](services/lead-engine) | [SalesQL](https://www.salesql.com/) | Python 3.12 / FastAPI / SQLite | [Read](https://presto-torque-aqk3.here.now/services/lead-engine.html) |
 
 ---
 

@@ -25,254 +25,134 @@
       "stack": ["FastAPI", "SQLAlchemy 2", "APScheduler", "SQLite", "Pillow", "Uvicorn"],
       "platforms": ["Instagram", "Facebook", "X", "LinkedIn", "YouTube", "Threads", "Bluesky", "Pinterest", "TikTok"],
       "summary": "Blotato sells a unified social media API and MCP server for $29/mo. This engine reproduces the whole surface — publishing, scheduling, comments, DMs, keyword automations, analytics, visual generation and source repurposing — across 38 REST endpoints and 17 MCP tools, plus a nine-screen web console. Same request shapes, same tool names, no per-seat billing and no post caps.",
-      "highlights": [
-        "38 REST endpoints covering every Blotato capability area",
-        "17 MCP tools so Claude, Cursor and Hermes drive it directly",
-        "Nine-screen web console served from the same origin — no build step",
-        "Nine platform connectors; the four newest talk to real platform APIs",
-        "Background scheduler plus recurring weekly slot calendar",
-        "Keyword DM automations with gates, webhook callbacks and run stats",
-        "Visual renderer producing real PNGs from six templates",
-        "Source extraction and per-platform repurposing"
-      ],
+      "highlights": ["38 REST endpoints", "17 MCP tools", "Nine-screen web console", "Nine platform connectors", "Scheduling and weekly slots", "Keyword DM automations", "Six PNG templates", "Source extraction and repurposing"],
       "features": [
-        {
-          "title": "Publishing",
-          "body": "One POST /v2/posts targets any connected account. The connector registry resolves the platform adapter from the account record, so adding a platform never touches client code."
-        },
-        {
-          "title": "Scheduling",
-          "body": "Pass an ISO-8601 scheduledTime and the APScheduler worker dispatches within 15 seconds of the due time. Recurring weekly slots per account, plus next-free-slot resolution in the account timezone."
-        },
-        {
-          "title": "Comments and DMs",
-          "body": "Read comments, reply publicly, list DM threads with unread counts, read transcripts and send outbound messages. Everything the agent needs to handle its own follow-up."
-        },
-        {
-          "title": "DM automations",
-          "body": "Keyword triggers on comments or messages. On a hit the engine posts a randomized public reply, sends the DM, applies follow or email gates, and fires your webhook. Meta's callback shape is handled at /webhooks/meta."
-        },
-        {
-          "title": "Analytics",
-          "body": "Snapshot history per post, aggregate totals, engagement rate, and top-post ranking by views, likes, comments, shares, saves or reach."
-        },
-        {
-          "title": "Visuals",
-          "body": "Six templates render actual PNGs with Pillow: quote cards, tweet cards, 4:5 carousels, whiteboard and chalkboard infographics, and tutorial carousels. Outputs are served back as public URLs."
-        },
-        {
-          "title": "Sources",
-          "body": "Feed it a YouTube link, article, PDF, X post or raw text. It extracts the content and repurposes it into platform-shaped drafts ready for the composer."
-        },
-        {
-          "title": "Web console",
-          "body": "A nine-screen dashboard: overview, composer with fan-out publishing, queue and slot calendar, inbox, automations, visual studio, sources, analytics and settings. Vanilla JS, one file, no build step."
-        }
+        {"title":"Publishing","body":"One POST /v2/posts targets any connected account. The connector registry resolves the platform adapter."},
+        {"title":"Scheduling","body":"ISO-8601 scheduling, background dispatcher and recurring weekly slots per account."},
+        {"title":"Comments and DMs","body":"Read comments, reply publicly, list DM threads and send messages."},
+        {"title":"Automations","body":"Keyword triggers, public reply variants, DMs, gates and webhooks."},
+        {"title":"Analytics","body":"Snapshots, aggregate totals, engagement rates and top-post rankings."},
+        {"title":"Visuals","body":"Six Pillow templates render quote cards, tweet cards, carousels and infographics."},
+        {"title":"Sources","body":"Extract from YouTube, articles, PDFs, X posts or text, then repurpose drafts."},
+        {"title":"Console","body":"Dashboard, composer, queue, inbox, automations, visuals, sources, analytics and settings."}
       ],
-      "ui": {
-        "intro": "The console is served at / from the same process as the API, so there is nothing to deploy separately. It authenticates with the same API key and keeps it in browser storage.",
-        "images": [
-          { "src": "assets/ui/ui-dashboard.png", "caption": "Dashboard: plan and credits, nine connected accounts, live totals and recent posts." },
-          { "src": "assets/ui/ui-compose.png", "caption": "Composer: fan-out to several accounts at once, with upload and scheduling." },
-          { "src": "assets/ui/ui-inbox.png", "caption": "Inbox: comments awaiting reply and DM threads in one place." },
-          { "src": "assets/ui/ui-visuals.png", "caption": "Visual studio: template gallery and generated assets." },
-          { "src": "assets/ui/ui-analytics.png", "caption": "Analytics: totals, metric selector and ranked top posts." }
-        ]
-      },
-      "prereqs": [
-        "Python 3.12",
-        "uv package manager (pip also works, uv is faster)",
-        "Git"
+      "ui":{"intro":"Console at /, served by the API process.","images":[
+        {"src":"assets/ui/ui-dashboard.png","caption":"Dashboard"},
+        {"src":"assets/ui/ui-compose.png","caption":"Compose"},
+        {"src":"assets/ui/ui-inbox.png","caption":"Inbox"},
+        {"src":"assets/ui/ui-visuals.png","caption":"Visuals"},
+        {"src":"assets/ui/ui-analytics.png","caption":"Analytics"}
+      ]},
+      "prereqs":["Python 3.12","uv","Git"],
+      "install":[
+        {"title":"Clone","desc":"Get the source.","lang":"bash","code":"git clone https://github.com/venugopal1902/replicas.git\ncd replicas/services/blotato-engine"},
+        {"title":"Install","desc":"Create environment.","lang":"bash","code":"uv sync --python 3.12"},
+        {"title":"Test","desc":"Run suite.","lang":"bash","code":"uv run python tests/test_engine.py"},
+        {"title":"Run","desc":"Start service on port 8400.","lang":"bash","code":"uv run python scripts/run_server.py"},
+        {"title":"Open UI","desc":"Master key: blt_master_venu_secret_2026","lang":"text","code":"http://localhost:8400"}
       ],
-      "install": [
-        {
-          "title": "Clone the repository",
-          "desc": "Grab the monorepo and move into the service directory.",
-          "lang": "bash",
-          "code": "git clone https://github.com/venugopal1902/replicas.git\ncd replicas/services/blotato-engine"
-        },
-        {
-          "title": "Install dependencies",
-          "desc": "uv reads pyproject.toml and creates an isolated virtual environment.",
-          "lang": "bash",
-          "code": "uv sync --python 3.12"
-        },
-        {
-          "title": "Verify the build",
-          "desc": "Runs the full end-to-end suite against a fresh database. 52 checks must pass.",
-          "lang": "bash",
-          "code": "uv run python tests/test_engine.py"
-        },
-        {
-          "title": "Start the server",
-          "desc": "Binds to port 8400. The database, nine seed accounts and demo data are created on first boot.",
-          "lang": "bash",
-          "code": "uv run python scripts/run_server.py"
-        },
-        {
-          "title": "Open the console",
-          "desc": "The web UI is served from the same process. Paste the master key when prompted.",
-          "lang": "text",
-          "code": "http://localhost:8400\n\nMaster key: blt_master_venu_secret_2026"
-        }
+      "verify":{"title":"Health check","code":"curl http://localhost:8400/health"},
+      "urls":[{"label":"UI","value":"http://localhost:8400/"},{"label":"REST","value":"http://localhost:8400/v2"},{"label":"MCP","value":"http://localhost:8400/mcp"},{"label":"Swagger","value":"http://localhost:8400/docs"}],
+      "usage":[
+        {"title":"List accounts","desc":"Fetch IDs first.","lang":"bash","code":"curl -s http://localhost:8400/v2/users/me/accounts -H \"blotato-api-key: $BLOTATO_KEY\""},
+        {"title":"Publish","desc":"Media URLs must be public.","lang":"bash","code":"curl -X POST http://localhost:8400/v2/posts -H \"blotato-api-key: $BLOTATO_KEY\" -H \"Content-Type: application/json\" -d '{\"post\":{\"accountId\":\"<ID>\",\"content\":{\"text\":\"Hello\"}}}'"},
+        {"title":"MCP","desc":"Connect an agent.","lang":"json","code":"{\"mcpServers\":{\"blotato\":{\"url\":\"http://localhost:8400/mcp\",\"headers\":{\"blotato-api-key\":\"<KEY>\"}}}}"}
       ],
-      "verify": {
-        "title": "Confirm it is live",
-        "code": "curl http://localhost:8400/health\n# {\"status\":\"online\",\"version\":\"2.0.0\",\"ui\":\"/\"}"
-      },
-      "urls": [
-        { "label": "Web console", "value": "http://localhost:8400/" },
-        { "label": "REST base", "value": "http://localhost:8400/v2" },
-        { "label": "MCP endpoint", "value": "http://localhost:8400/mcp" },
-        { "label": "Swagger UI", "value": "http://localhost:8400/docs" }
+      "endpoints":[{"method":"GET","path":"/health","desc":"Health"},{"method":"GET","path":"/v2/users/me/accounts","desc":"Accounts"},{"method":"POST","path":"/v2/posts","desc":"Publish"},{"method":"GET","path":"/v2/schedules","desc":"Queue"},{"method":"POST","path":"/v2/media/upload","desc":"Media"},{"method":"GET","path":"/v2/comments","desc":"Comments"},{"method":"GET","path":"/v2/messages","desc":"Messages"},{"method":"GET","path":"/v2/dm-automations","desc":"Automations"},{"method":"GET","path":"/v2/analytics","desc":"Analytics"},{"method":"POST","path":"/v2/videos/from-templates","desc":"Visuals"},{"method":"POST","path":"/v2/source-resolutions","desc":"Sources"},{"method":"POST","path":"/mcp","desc":"MCP"}],
+      "mcp_tools":[{"name":"blotato_list_accounts","desc":"List accounts"},{"name":"blotato_publish_post","desc":"Publish"},{"name":"blotato_get_post_status","desc":"Status"},{"name":"blotato_list_schedules","desc":"Schedules"},{"name":"blotato_next_free_slot","desc":"Next slot"},{"name":"blotato_get_analytics","desc":"Analytics"},{"name":"blotato_top_posts","desc":"Top posts"},{"name":"blotato_list_comments","desc":"Comments"},{"name":"blotato_reply_to_comment","desc":"Reply"},{"name":"blotato_list_threads","desc":"Threads"},{"name":"blotato_get_thread","desc":"Read thread"},{"name":"blotato_send_message","desc":"Send DM"},{"name":"blotato_list_automations","desc":"List automations"},{"name":"blotato_run_automation","desc":"Test automation"},{"name":"blotato_list_templates","desc":"List templates"},{"name":"blotato_create_visual","desc":"Create visual"},{"name":"blotato_check_credits","desc":"Credits"}],
+      "monetization":[{"tier":"Personal","price":"$0","detail":"Local admin use."},{"tier":"Starter","price":"$19/mo","detail":"1,000 credits."},{"tier":"Pro","price":"$49/mo","detail":"5,000 credits."},{"tier":"Agency","price":"$99/mo","detail":"Unlimited."}],
+      "notes":["Real credentials rejected by a platform fail honestly; only provider=mock accounts simulate.","Live posting needs approved platform apps and valid tokens.","Use TLS and change the master key before public exposure."],
+      "faq":[{"q":"Is this affiliated with Blotato?","a":"No. Independent clean-room implementation."},{"q":"Does mock publish live?","a":"No. Demo posts carry simulated=true."}]
+    },
+    {
+      "slug":"lead-engine",
+      "name":"Lead Engine",
+      "replaces":"SalesQL",
+      "replaces_url":"https://www.salesql.com/",
+      "tagline":"Prospect search and contact enrichment: work emails, provider-sourced personal emails and phone numbers.",
+      "status":"beta",
+      "version":"0.1.0",
+      "language":"Python 3.12",
+      "license":"MIT",
+      "repo_path":"services/lead-engine",
+      "stack":["FastAPI","SQLAlchemy 2","SQLite","APScheduler","dnspython","vanilla JS"],
+      "platforms":["LinkedIn","Hunter","Apollo","People Data Labs","DNS/MX"],
+      "summary":"Self-hosted prospecting and enrichment workspace inspired by SalesQL. Search by role, company, industry, location and headcount; reveal work email for one credit only when found; process LinkedIn URL and CSV enrichment jobs; verify emails; organize folders; run simulated campaigns with open/click tracking; connect AI agents using MCP. Real provider-backed details require your own API keys. Without one, the system can generate a work-email candidate from a public company domain and check MX, but never invents a personal email or phone.",
+      "highlights":["Prospector filters and natural-language filter parsing; searches cost 0 credits","One credit per successful email reveal; no result means no charge","Work email candidates use ranked patterns and MX checks","Direct email and phone are returned only by configured providers","LinkedIn URL and CSV enrichment jobs, folders and verifier","Campaign sequences and tracking; send simulation by default","Six MCP tools and a nine-screen UI"],
+      "features":[
+        {"title":"Prospector","body":"Filter by title, company, industry, location, seniority and headcount. Searching never uses credits."},
+        {"title":"Contact reveal","body":"Reveals work email confidence/status. One credit only when an email is found. Unavailable data is not fabricated."},
+        {"title":"LinkedIn URL enrichment","body":"Parse profile URLs and enrich via configured Hunter, Apollo or PDL providers. Does not scrape LinkedIn or bypass sign-in/anti-bot controls."},
+        {"title":"Bulk CSV enrichment","body":"Upload LinkedIn URLs, names/company, or email addresses. Poll jobs and download enriched CSV."},
+        {"title":"Email verifier","body":"Syntax, role account, MX and optional SMTP checks. SMTP probe is off by default."},
+        {"title":"Folders and campaigns","body":"Save contacts in lists. Build sequences and track opens/clicks. Sends are simulated unless SMTP is explicitly configured."},
+        {"title":"MCP and API","body":"Search, reveal, enrich, verify, folders and credits via MCP/API."}
       ],
-      "usage": [
-        {
-          "title": "List connected accounts",
-          "desc": "Every publish call needs an accountId. Fetch the list first; never invent IDs.",
-          "lang": "bash",
-          "code": "curl -s http://localhost:8400/v2/users/me/accounts \\\n  -H \"blotato-api-key: $BLOTATO_KEY\""
-        },
-        {
-          "title": "Publish a post immediately",
-          "desc": "Omit scheduledTime to publish on the spot. Media must be public URLs.",
-          "lang": "bash",
-          "code": "curl -s -X POST http://localhost:8400/v2/posts \\\n  -H \"blotato-api-key: $BLOTATO_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"post\": {\n      \"accountId\": \"<ACCOUNT_ID>\",\n      \"content\": {\n        \"text\": \"Ship faster. Post everywhere.\",\n        \"mediaUrls\": [\"https://example.com/reel.mp4\"]\n      },\n      \"target\": {\"targetType\": \"instagram\"}\n    }\n  }'"
-        },
-        {
-          "title": "Schedule into the next free slot",
-          "desc": "The engine resolves the next open weekly slot for that account.",
-          "lang": "bash",
-          "code": "curl -s \"http://localhost:8400/v2/schedule-slots/next?accountId=<ACCOUNT_ID>\" \\\n  -H \"blotato-api-key: $BLOTATO_KEY\"\n# {\"slotTime\":\"2026-11-02T09:00:00+05:30\",\"timezone\":\"Asia/Kolkata\"}"
-        },
-        {
-          "title": "Render a carousel",
-          "desc": "Returns real PNG URLs you can hand straight to the publish endpoint.",
-          "lang": "bash",
-          "code": "curl -s -X POST http://localhost:8400/v2/videos/from-templates \\\n  -H \"blotato-api-key: $BLOTATO_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"templateId\": \"carousel\",\n    \"inputs\": {\"slides\": [\n      {\"title\": \"Why schedules beat motivation\", \"body\": \"Motivation is a mood.\"},\n      {\"title\": \"Pick three slots\", \"body\": \"Morning, lunch, evening.\"}\n    ]}\n  }'"
-        },
-        {
-          "title": "Build a keyword DM automation",
-          "desc": "Comment triggers a public reply variant plus a direct message. Test it without a real comment.",
-          "lang": "bash",
-          "code": "curl -s -X POST http://localhost:8400/v2/dm-automations \\\n  -H \"blotato-api-key: $BLOTATO_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"accountId\": \"<ACCOUNT_ID>\",\n    \"name\": \"Price keyword\",\n    \"dmMessage\": \"Here is the link you asked for.\",\n    \"triggers\": [{\"type\":\"comment-received\",\"keywords\":[\"price\"],\"isActive\":true}],\n    \"commentReply\": {\"variants\": [\n      {\"text\":\"Sent you a DM {{mention}}\"},\n      {\"text\":\"Check your inbox {{mention}}\"},\n      {\"text\":\"DM sent {{mention}}\"}\n    ]}\n  }'\n\ncurl -s -X POST http://localhost:8400/v2/dm-automations/<ID>/test \\\n  -H \"blotato-api-key: $BLOTATO_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"text\":\"what is the price?\",\"author\":\"tester\"}'"
-        },
-        {
-          "title": "Connect an agent over MCP",
-          "desc": "Any MCP-capable agent that connects gets all 17 tools with no extra wiring.",
-          "lang": "json",
-          "code": "{\n  \"mcpServers\": {\n    \"blotato\": {\n      \"url\": \"http://localhost:8400/mcp\",\n      \"headers\": { \"blotato-api-key\": \"<YOUR_KEY>\" }\n    }\n  }\n}"
-        },
-        {
-          "title": "Mint a key for a paying client",
-          "desc": "Generates a starter key with 1,000 credits and a 1,800 request/hour ceiling.",
-          "lang": "bash",
-          "code": "uv run python scripts/create_api_key.py \\\n  --client \"Acme Agency\" \\\n  --plan starter \\\n  --credits 1000"
-        }
+      "ui":{"intro":"Local workspace UI: prospect search, enrichment, lists, verifier, campaigns and API/MCP settings.","images":[
+        {"src":"assets/ui/lead-engine/ui-dashboard.png","caption":"Dashboard"},
+        {"src":"assets/ui/lead-engine/ui-prospector.png","caption":"Prospector"},
+        {"src":"assets/ui/lead-engine/ui-enrich.png","caption":"Enrichment jobs"},
+        {"src":"assets/ui/lead-engine/ui-verifier.png","caption":"Email verifier"},
+        {"src":"assets/ui/lead-engine/ui-campaigns.png","caption":"Campaigns"},
+        {"src":"assets/ui/lead-engine/ui-api.png","caption":"API and MCP"}
+      ]},
+      "prereqs":["Python 3.12","uv","Git"],
+      "install":[
+        {"title":"Clone","desc":"Get the service source.","lang":"bash","code":"git clone https://github.com/venugopal1902/replicas.git\ncd replicas/services/lead-engine"},
+        {"title":"Install","desc":"Create environment.","lang":"bash","code":"uv sync --python 3.12"},
+        {"title":"Run enrichment tests","desc":"Uses real DNS. Provider APIs optional.","lang":"bash","code":"uv run python tests/test_enrichment.py"},
+        {"title":"Start server","desc":"Local server on port 8500.","lang":"bash","code":"uv run python scripts/run_server.py"},
+        {"title":"Open app","desc":"Development credentials; change before exposing.","lang":"text","code":"http://localhost:8500\n\nadmin@leadengine.local / leadengine123"}
       ],
-      "endpoints": [
-        { "method": "GET", "path": "/health", "desc": "Liveness probe with version, endpoint map and UI path" },
-        { "method": "GET", "path": "/v2/users/me/accounts", "desc": "List every social account on the key" },
-        { "method": "POST", "path": "/v2/users/me/accounts", "desc": "Attach a new platform account with credentials" },
-        { "method": "POST", "path": "/v2/posts", "desc": "Publish now, or schedule with scheduledTime" },
-        { "method": "GET", "path": "/v2/posts", "desc": "Recent submissions, filterable by status" },
-        { "method": "GET", "path": "/v2/posts/{id}", "desc": "Status, live URL or failure reason for one submission" },
-        { "method": "GET", "path": "/v2/schedules", "desc": "Everything waiting in the scheduling queue" },
-        { "method": "PATCH", "path": "/v2/schedules/{id}", "desc": "Move a scheduled post to a new timestamp" },
-        { "method": "DELETE", "path": "/v2/schedules/{id}", "desc": "Cancel a scheduled post" },
-        { "method": "GET", "path": "/v2/schedule-slots", "desc": "Recurring weekly slots per account" },
-        { "method": "POST", "path": "/v2/schedule-slots", "desc": "Add a recurring slot" },
-        { "method": "DELETE", "path": "/v2/schedule-slots/{id}", "desc": "Remove a slot" },
-        { "method": "GET", "path": "/v2/schedule-slots/next", "desc": "Next open slot, with timezone-aware resolution" },
-        { "method": "POST", "path": "/v2/media", "desc": "Reserve an upload URL for a local file" },
-        { "method": "PUT", "path": "/v2/media/{id}/raw", "desc": "Raw byte sink for the reserved upload URL" },
-        { "method": "POST", "path": "/v2/media/upload", "desc": "One-shot multipart upload, returns a public URL" },
-        { "method": "GET", "path": "/v2/media", "desc": "Uploaded assets for the calling key" },
-        { "method": "GET", "path": "/v2/comments", "desc": "Comments with an unread-only filter" },
-        { "method": "POST", "path": "/v2/comments/{id}/reply", "desc": "Reply publicly to a comment" },
-        { "method": "POST", "path": "/v2/comments/{id}/read", "desc": "Mark a comment handled" },
-        { "method": "GET", "path": "/v2/messages", "desc": "DM threads with unread counts" },
-        { "method": "GET", "path": "/v2/messages/{threadId}", "desc": "Full transcript, marks the thread read" },
-        { "method": "POST", "path": "/v2/messages", "desc": "Send an outbound message into a thread" },
-        { "method": "GET", "path": "/v2/dm-automations", "desc": "List automations with run statistics" },
-        { "method": "POST", "path": "/v2/dm-automations", "desc": "Create a keyword-triggered DM flow" },
-        { "method": "PATCH", "path": "/v2/dm-automations/{id}", "desc": "Pause, resume or edit an automation" },
-        { "method": "DELETE", "path": "/v2/dm-automations/{id}", "desc": "Delete an automation" },
-        { "method": "POST", "path": "/v2/dm-automations/{id}/test", "desc": "Simulate an inbound event end to end" },
-        { "method": "GET", "path": "/v2/webhook-events", "desc": "Audit log of automation runs" },
-        { "method": "POST", "path": "/webhooks/meta", "desc": "Meta callback ingress for comments and messages" },
-        { "method": "POST", "path": "/webhooks/test", "desc": "Generic ingress for n8n, Make or custom triggers" },
-        { "method": "GET", "path": "/v2/videos/templates", "desc": "Template catalogue with input schemas" },
-        { "method": "POST", "path": "/v2/videos/from-templates", "desc": "Render a visual, returns PNG URLs" },
-        { "method": "GET", "path": "/v2/videos/creations", "desc": "Generation history" },
-        { "method": "GET", "path": "/v2/videos/creations/{id}", "desc": "Status and outputs for one render" },
-        { "method": "DELETE", "path": "/v2/videos/{id}", "desc": "Delete a render record" },
-        { "method": "POST", "path": "/v2/source-resolutions", "desc": "Extract content from a URL, PDF or text" },
-        { "method": "GET", "path": "/v2/source-resolutions", "desc": "Previously extracted sources" },
-        { "method": "GET", "path": "/v2/source-resolutions/{id}", "desc": "Extraction status and body" },
-        { "method": "POST", "path": "/v2/source-resolutions/{id}/repurpose", "desc": "Turn a source into per-platform drafts" },
-        { "method": "GET", "path": "/v2/analytics", "desc": "Totals, or per-post metrics with history" },
-        { "method": "GET", "path": "/v2/analytics/top", "desc": "Rank posts by any metric" },
-        { "method": "POST", "path": "/v2/analytics/snapshot", "desc": "Capture a metrics snapshot" },
-        { "method": "GET", "path": "/v2/credits", "desc": "Balance, plan and rate limit" },
-        { "method": "POST", "path": "/v2/admin/keys", "desc": "Admin only: issue a key to a client" },
-        { "method": "POST", "path": "/mcp", "desc": "JSON-RPC MCP transport, 17 tools" }
+      "verify":{"title":"Health check","code":"curl http://localhost:8500/health"},
+      "urls":[{"label":"Web UI","value":"http://localhost:8500/"},{"label":"API docs","value":"http://localhost:8500/docs"},{"label":"MCP","value":"http://localhost:8500/mcp"}],
+      "usage":[
+        {"title":"Search prospects","desc":"No credits are spent on search.","lang":"bash","code":"curl -X POST http://localhost:8500/api/search -H \"Authorization: Bearer $TOKEN\" -H \"Content-Type: application/json\" -d '{\"filters\":{\"title\":\"Head of Talent\",\"industry\":\"Fintech\",\"location\":\"London\"},\"pageSize\":20}'"},
+        {"title":"Submit LinkedIn URL enrichment","desc":"Real contact data requires a provider API key. LinkedIn scraping is not performed.","lang":"bash","code":"curl -X POST http://localhost:8500/api/enrich/linkedin -H \"Authorization: Bearer $TOKEN\" -H \"Content-Type: application/json\" -d '{\"urls\":[\"https://www.linkedin.com/in/example-person\"],\"companyHint\":\"Example Inc\"}'"},
+        {"title":"Verify email","desc":"Uses a separate verifier-credit pool.","lang":"bash","code":"curl -X POST http://localhost:8500/api/verify -H \"Authorization: Bearer $TOKEN\" -H \"Content-Type: application/json\" -d '{\"emails\":[\"person@example.com\"]}'"},
+        {"title":"MCP setup","desc":"Local AI-client configuration.","lang":"json","code":"{\"mcpServers\":{\"lead-engine\":{\"url\":\"http://localhost:8500/mcp\",\"headers\":{\"Authorization\":\"Bearer <TOKEN>\"}}}}"}
       ],
-      "mcp_tools": [
-        { "name": "blotato_list_accounts", "desc": "Every connected account with platform, name and id" },
-        { "name": "blotato_publish_post", "desc": "Publish or schedule to one account" },
-        { "name": "blotato_get_post_status", "desc": "Resolve a submission to published, scheduled or failed" },
-        { "name": "blotato_list_schedules", "desc": "Posts waiting in the queue" },
-        { "name": "blotato_next_free_slot", "desc": "Next open slot from the weekly calendar" },
-        { "name": "blotato_get_analytics", "desc": "Totals, or one post with snapshot history" },
-        { "name": "blotato_top_posts", "desc": "Rank posts by views, likes, comments, shares, saves or reach" },
-        { "name": "blotato_list_comments", "desc": "Comments awaiting a reply" },
-        { "name": "blotato_reply_to_comment", "desc": "Post a public reply" },
-        { "name": "blotato_list_threads", "desc": "DM conversations with unread counts" },
-        { "name": "blotato_get_thread", "desc": "Read a full DM transcript" },
-        { "name": "blotato_send_message", "desc": "Send a direct message into a thread" },
-        { "name": "blotato_list_automations", "desc": "Keyword flows with run statistics" },
-        { "name": "blotato_run_automation", "desc": "Simulate an inbound event against a flow" },
-        { "name": "blotato_list_templates", "desc": "Visual templates and their inputs" },
-        { "name": "blotato_create_visual", "desc": "Points to the REST render endpoint" },
-        { "name": "blotato_check_credits", "desc": "Plan, balance and rate limit" }
+      "endpoints":[
+        {"method":"POST","path":"/api/auth/login","desc":"Create browser session"},
+        {"method":"GET","path":"/api/auth/me","desc":"Current workspace"},
+        {"method":"GET","path":"/api/workspace","desc":"Plan, credits and quotas"},
+        {"method":"POST","path":"/api/search","desc":"Search without credit charges"},
+        {"method":"POST","path":"/api/contacts/{id}/reveal","desc":"Reveal and conditionally charge one credit"},
+        {"method":"POST","path":"/api/enrich/linkedin","desc":"Queue LinkedIn URL enrichment"},
+        {"method":"POST","path":"/api/csv/enrich","desc":"Queue CSV enrichment"},
+        {"method":"GET","path":"/api/jobs/{id}","desc":"Poll job progress"},
+        {"method":"POST","path":"/api/verify","desc":"Verify email addresses"},
+        {"method":"GET","path":"/api/campaigns","desc":"List campaigns"},
+        {"method":"POST","path":"/api/campaigns/{id}/send","desc":"Simulated send; no email by default"},
+        {"method":"GET","path":"/api/api-keys","desc":"Machine keys"},
+        {"method":"POST","path":"/mcp","desc":"MCP JSON-RPC"}
       ],
-      "monetization": [
-        { "tier": "Personal", "price": "$0", "detail": "Master key, unlimited credits, runs on your machine. This is your own engine." },
-        { "tier": "Starter", "price": "$19/mo", "detail": "1,000 credits and 1,800 req/hr. Undercuts Blotato's $29 entry tier." },
-        { "tier": "Pro", "price": "$49/mo", "detail": "5,000 credits and 3,600 req/hr. Aimed at solo operators running several brands." },
-        { "tier": "Agency", "price": "$99/mo", "detail": "Unlimited credits, 10,000 req/hr, white-label docs. For teams reselling social automation." }
+      "mcp_tools":[
+        {"name":"search_prospects","desc":"Free contact search"},
+        {"name":"reveal_contact","desc":"Reveal one record"},
+        {"name":"enrich_linkedin","desc":"Provider-backed URL enrichment"},
+        {"name":"verify_email","desc":"Syntax, role and MX checks"},
+        {"name":"list_folders","desc":"List saved contacts"},
+        {"name":"check_credits","desc":"Show reveal/verifier quotas"}
       ],
-      "notes": [
-        "Credentials are strict on purpose. If you supply real credentials and they are incomplete or rejected, the post fails with the platform's own error. The engine never reports a fake publish. Responses carry a `simulated` flag so demo output is always distinguishable from live output.",
-        "Publishing to real platforms needs approved developer apps. Meta needs instagram_content_publish and pages_manage_posts; X needs a paid write tier; TikTok needs content posting access.",
-        "Accounts seeded with provider \"mock\" publish through a deterministic simulator. That keeps the whole pipeline testable before app review, and every simulated post is labelled.",
-        "Media must be publicly reachable URLs for platform APIs. Use POST /v2/media/upload to host it locally, then expose the service behind TLS.",
-        "SQLite is the default store. For multi-instance deployments switch DATABASE_URL to Postgres.",
-        "Never expose port 8400 directly. Put it behind Nginx or Caddy with TLS before selling access, and change MASTER_API_KEY.",
-        "The web console ships in static/ with no build step. If you rebrand it, keep the api-key header name or the engine will reject requests."
+      "monetization":[
+        {"tier":"Free","price":"$0/mo","detail":"50 monthly reveal credits, 1 seat, 100 campaign recipients."},
+        {"tier":"Basic","price":"$39/mo","detail":"2,000 credits and CSV enrichment up to 1,000 rows."},
+        {"tier":"Professional","price":"$79/mo","detail":"5,000 credits, 3 seats and API access."},
+        {"tier":"Premium","price":"$119/mo","detail":"12,000 credits, 5 seats and larger quotas."}
       ],
-      "faq": [
-        {
-          "q": "Is this the same API as Blotato?",
-          "a": "The request shapes, endpoint paths and MCP tool names intentionally match, so existing n8n flows and agent prompts work unchanged. Blotato's hosted service is a separate product; this is an independent implementation you run yourself."
-        },
-        {
-          "q": "Does it really render carousels and infographics?",
-          "a": "Yes. Six templates render PNGs with Pillow at 1080x1080 or 1080x1350 and are served back as public URLs. The test suite asserts a real file lands on disk above a size threshold."
-        },
-        {
-          "q": "Can I sell access to it?",
-          "a": "Yes. Keys carry plans and credit balances, and the API refuses writes once a key is exhausted. Mint keys with scripts/create_api_key.py, collect payment however you like, top up the balance when they renew."
-        },
-        {
-          "q": "How do DM automations get triggered in production?",
-          "a": "Point your Meta app's webhook at /webhooks/meta. The engine parses comment and message events, matches keywords, posts the reply variant, sends the DM and fires your own webhook. For other platforms or custom logic, POST to /webhooks/test with the same event shape."
-        },
-        {
-          "q": "What happens without platform credentials?",
-          "a": "The registry falls back to a deterministic mock adapter that returns a plausible URL and status. That keeps the pipeline testable before you have app review approval."
-        }
+      "notes":[
+        "This is an independent clean-room tool. It does not scrape LinkedIn or bypass login/rate limits. Enrich from user-supplied URLs through licensed APIs and domain-based work-email checks.",
+        "Without HUNTER_API_KEY, APOLLO_API_KEY or PDL_API_KEY, results are limited to generated work-email candidates and MX checks. No personal email or phone is invented.",
+        "Seeded sample contacts are fictional demo records, not real people.",
+        "SMTP probing is off by default. Campaign sends are simulated by default; configure SMTP only with consent and a lawful basis.",
+        "Development login: admin@leadengine.local / leadengine123. Change it before deployment and never expose the dev server publicly."
+      ],
+      "faq":[
+        {"q":"Can it get email and phone from a LinkedIn link?","a":"It parses profile URLs and enriches through configured Hunter, Apollo or PDL APIs. Without provider keys it can generate work-email candidates from name/domain and check MX. It never scrapes LinkedIn or invents a direct email/phone."},
+        {"q":"Are the sample contacts real?","a":"No. Seed records are fictional demo data."},
+        {"q":"Will campaigns email people?","a":"No by default. Sends are simulated. SMTP is an explicit opt-in."},
+        {"q":"Do searches cost credits?","a":"No. Only a reveal that returns at least one email costs one credit."}
       ]
     }
   ]

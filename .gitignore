@@ -32,3 +32,9 @@ Thumbs.db
 # local test artifacts
 .tmp-chrome/
 *.db
+
+# Lead Engine local runtime data
+services/lead-engine/data/
+services/lead-engine/.tmp-chrome/
+
+__pycache__/
