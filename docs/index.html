@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Replicas &amp;middot; Self-hosted replacements for the paid APIs you actually use.</title>
+<meta name="description" content="Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.">
+<meta property="og:title" content="Replicas &amp;middot; Self-hosted replacements for the paid APIs you actually use.">
+<meta property="og:description" content="Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236ee7b7'/><text x='16' y='23' font-size='19' font-family='monospace' font-weight='bold' text-anchor='middle' fill='%23061010'>R</text></svg>">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html">
+      <span class="logo">R</span>
+      <span>Replicas</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html#services">Services</a>
+      <a href="index.html#how">How it works</a>
+      <a href="index.html#stack">Tech</a>
+      <a class="gh-btn" href="https://github.com/venugopal1902/replicas">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <section class="hero">
+    <span class="eyebrow"><span class="dot"></span> Clean-room replicas &middot; MIT licensed</span>
+    <h1>Own the APIs you<br><span class="grad">already pay for.</span></h1>
+    <p class="lede">Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="services/blotato-engine.html">Read the docs &rarr;</a>
+      <a class="btn btn-ghost" href="https://github.com/venugopal1902/replicas">View source</a>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b>1</b><span>Services</span></div>
+      <div class="stat"><b>12</b><span>Endpoints</span></div>
+      <div class="stat"><b>5</b><span>MCP tools</span></div>
+      <div class="stat"><b>9</b><span>Platforms</span></div>
+    </div>
+  </section>
+
+  <section id="services">
+    <div class="sec-head">
+      <h2>Services</h2>
+      <p>Every replica ships with full source, an install path that works from a clean machine, and a documented API surface.</p>
+    </div>
+    <div class="grid"><a class="card" href="services/blotato-engine.html">
+  <div class="card-top">
+    <h3>Blotato Engine</h3>
+    <span class="badge">stable</span>
+  </div>
+  <p class="tagline">One REST API + MCP server to publish to 9 social platforms. Self-hosted, unlimited posts, zero subscription.</p>
+  <div class="meta">
+    <span class="chip">replaces Blotato</span>
+    <span class="chip">Python 3.12</span>
+    <span class="chip">FastAPI</span><span class="chip">SQLAlchemy 2</span><span class="chip">APScheduler</span><span class="chip">SQLite</span>
+  </div>
+</a></div>
+  </section>
+
+  <section id="how">
+    <div class="sec-head">
+      <h2>How a replica gets built</h2>
+      <p>Behaviour is reverse engineered, code is written fresh. No proprietary source is copied.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature"><h4>1 &middot; Map the surface</h4><p>Read the public API, OpenAPI schema and agent docs. Capture real request and response pairs for every operation that matters.</p></div>
+      <div class="feature"><h4>2 &middot; Trace the behaviour</h4><p>Use REA and browser instrumentation to observe the live app: endpoints, state transitions, async job shapes, error semantics.</p></div>
+      <div class="feature"><h4>3 &middot; Write it clean</h4><p>Implement the same contracts in our own code. Compatibility is behavioural, not copy-pasted.</p></div>
+      <div class="feature"><h4>4 &middot; Prove it works</h4><p>End-to-end tests hit the real ASGI app: publish, poll status, verify credits, list MCP tools. Green suite or it does not ship.</p></div>
+    </div>
+  </section>
+
+  <section id="stack">
+    <div class="sec-head">
+      <h2>Stack</h2>
+      <p>Boring, portable choices. Anything that runs in a container runs these replicas.</p>
+    </div>
+    <div class="pill-row">
+      <span class="chip">Python 3.12</span>
+      <span class="chip">FastAPI</span>
+      <span class="chip">SQLAlchemy</span>
+      <span class="chip">APScheduler</span>
+      <span class="chip">SQLite / Postgres</span>
+      <span class="chip">JSON-RPC MCP</span>
+      <span class="chip">uv</span>
+      <span class="chip">Docker-ready</span>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>&copy; Gubbala Venu Gopal</span>
+    <span>Replicas &middot; self-hosted replacements</span>
+    <span class="sp"><a href="https://github.com/venugopal1902/replicas">Source on GitHub</a></span>
+  </div>
+</footer>
+<script src="assets/app.js" defer></script>
+</body>
+</html>

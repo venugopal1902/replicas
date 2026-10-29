@@ -1,0 +1,203 @@
+{
+  "site": {
+    "title": "Replicas",
+    "tagline": "Self-hosted replacements for the paid APIs you actually use.",
+    "description": "Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.",
+    "owner": "venugopal1902",
+    "repo": "replicas",
+    "repo_url": "https://github.com/venugopal1902/replicas",
+    "site_url": "https://venugopal1902.github.io/replicas/",
+    "author": "Gubbala Venu Gopal"
+  },
+  "services": [
+    {
+      "slug": "blotato-engine",
+      "name": "Blotato Engine",
+      "replaces": "Blotato",
+      "replaces_url": "https://www.blotato.com/",
+      "tagline": "One REST API + MCP server to publish to 9 social platforms. Self-hosted, unlimited posts, zero subscription.",
+      "status": "stable",
+      "version": "0.1.0",
+      "language": "Python 3.12",
+      "license": "MIT",
+      "repo_path": "services/blotato-engine",
+      "stack": ["FastAPI", "SQLAlchemy 2", "APScheduler", "SQLite", "Uvicorn"],
+      "platforms": ["Instagram", "Facebook", "X", "LinkedIn", "YouTube", "Threads", "Bluesky", "Pinterest", "TikTok"],
+      "summary": "Blotato sells a unified social media API and MCP server for $29/mo. This engine reproduces the same surface — /v2/posts, /v2/users/me/accounts, /v2/analytics, /v2/dm-automations, /v2/credits, plus a JSON-RPC MCP endpoint — on your own machine. Same request shapes, same tool names, no per-seat billing and no post caps.",
+      "highlights": [
+        "Drop-in REST compatibility with Blotato v2 endpoint shapes",
+        "Native JSON-RPC MCP so Claude, Cursor and Hermes get the tools directly",
+        "Multi-tenant API keys with per-plan credit quotas and rate limits",
+        "Background scheduler dispatches due posts every 15 seconds",
+        "Six real platform connectors plus a deterministic mock for testing",
+        "Full credit metering wired into every publish call"
+      ],
+      "features": [
+        {
+          "title": "Unified publishing",
+          "body": "One POST /v2/posts call targets any connected account. The connector registry resolves the right platform adapter from the account record, so adding a platform never touches your client code."
+        },
+        {
+          "title": "Scheduling engine",
+          "body": "Pass an ISO-8601 scheduledTime and the APScheduler worker picks the post up within 15 seconds of its due time. Status moves scheduled to published or failed with the platform error preserved."
+        },
+        {
+          "title": "MCP server",
+          "body": "A JSON-RPC endpoint implementing initialize, tools/list and tools/call. Five tools ship by default: list accounts, publish post, get post status, get analytics, check credits."
+        },
+        {
+          "title": "Multi-tenant billing",
+          "body": "Every API key carries a plan, a credit balance and an hourly rate limit. Admin keys are unlimited. Client keys stop working the moment credits hit zero, which makes resale trivial."
+        },
+        {
+          "title": "Real connectors",
+          "body": "Meta Graph API for Instagram Reels and carousels, X API v2, LinkedIn UGC posts, and Bluesky AT Protocol are implemented directly. Missing credentials fall back to a deterministic mock so the pipeline is always testable."
+        },
+        {
+          "title": "Testable by design",
+          "body": "A six-stage end-to-end suite exercises health, account listing, publish, status verification, key minting and MCP tool listing against the real ASGI app."
+        }
+      ],
+      "prereqs": [
+        "Python 3.12",
+        "uv package manager (pip also works, uv is faster)",
+        "Git"
+      ],
+      "install": [
+        {
+          "title": "Clone the repository",
+          "desc": "Grab the monorepo and move into the service directory.",
+          "lang": "bash",
+          "code": "git clone https://github.com/venugopal1902/replicas.git\ncd replicas/services/blotato-engine"
+        },
+        {
+          "title": "Install dependencies",
+          "desc": "uv reads pyproject.toml and creates an isolated virtual environment.",
+          "lang": "bash",
+          "code": "uv sync --python 3.12"
+        },
+        {
+          "title": "Verify the build",
+          "desc": "Runs the full end-to-end suite. Six checks must pass before you continue.",
+          "lang": "bash",
+          "code": "uv run python tests/test_engine.py"
+        },
+        {
+          "title": "Start the server",
+          "desc": "Binds to port 8400. Database and seed accounts are created on first boot.",
+          "lang": "bash",
+          "code": "uv run python scripts/run_server.py"
+        }
+      ],
+      "verify": {
+        "title": "Confirm it is live",
+        "code": "curl http://localhost:8400/health\n# {\"status\":\"online\",\"service\":\"Blotato Self-Hosted Engine\"}"
+      },
+      "urls": [
+        { "label": "REST base", "value": "http://localhost:8400/v2" },
+        { "label": "MCP endpoint", "value": "http://localhost:8400/mcp" },
+        { "label": "Swagger UI", "value": "http://localhost:8400/docs" }
+      ],
+      "usage": [
+        {
+          "title": "List connected accounts",
+          "desc": "Every publish call needs an accountId. Fetch the list first; never invent IDs.",
+          "lang": "bash",
+          "code": "curl -s http://localhost:8400/v2/users/me/accounts \\\n  -H \"blotato-api-key: $BLOTATO_KEY\""
+        },
+        {
+          "title": "Publish a post immediately",
+          "desc": "Omit scheduledTime to publish on the spot. Media must be public URLs.",
+          "lang": "bash",
+          "code": "curl -s -X POST http://localhost:8400/v2/posts \\\n  -H \"blotato-api-key: $BLOTATO_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"post\": {\n      \"accountId\": \"<ACCOUNT_ID>\",\n      \"content\": {\n        \"text\": \"Ship faster. Post everywhere.\",\n        \"mediaUrls\": [\"https://example.com/reel.mp4\"]\n      },\n      \"target\": {\"targetType\": \"instagram\"}\n    }\n  }'"
+        },
+        {
+          "title": "Schedule for later",
+          "desc": "Add an ISO-8601 timestamp. The scheduler fires within 15 seconds of the due time.",
+          "lang": "bash",
+          "code": "curl -s -X POST http://localhost:8400/v2/posts \\\n  -H \"blotato-api-key: $BLOTATO_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"post\": {\n      \"accountId\": \"<ACCOUNT_ID>\",\n      \"content\": {\"text\": \"Tomorrow morning drop\"}\n    },\n    \"scheduledTime\": \"2026-11-01T09:00:00+05:30\"\n  }'"
+        },
+        {
+          "title": "Connect an agent over MCP",
+          "desc": "Drop this into your client config. Any MCP-capable agent gets the publish tools.",
+          "lang": "json",
+          "code": "{\n  \"mcpServers\": {\n    \"blotato\": {\n      \"url\": \"http://localhost:8400/mcp\",\n      \"headers\": {\n        \"blotato-api-key\": \"<YOUR_KEY>\"\n      }\n    }\n  }\n}"
+        },
+        {
+          "title": "Mint a key for a paying client",
+          "desc": "Generates a starter key with 1,000 credits and a 1,800 request/hour ceiling.",
+          "lang": "bash",
+          "code": "uv run python scripts/create_api_key.py \\\n  --client \"Acme Agency\" \\\n  --plan starter \\\n  --credits 1000"
+        }
+      ],
+      "endpoints": [
+        { "method": "GET", "path": "/health", "desc": "Liveness probe with version and endpoint map" },
+        { "method": "GET", "path": "/v2/users/me/accounts", "desc": "List every social account on the key" },
+        { "method": "POST", "path": "/v2/users/me/accounts", "desc": "Attach a new platform account with credentials" },
+        { "method": "POST", "path": "/v2/posts", "desc": "Publish now, or schedule with scheduledTime" },
+        { "method": "GET", "path": "/v2/posts/{id}", "desc": "Status, live URL or failure reason for one submission" },
+        { "method": "GET", "path": "/v2/posts", "desc": "Recent submissions, filterable by status" },
+        { "method": "GET", "path": "/v2/analytics", "desc": "Per-post metrics or an account-level overview" },
+        { "method": "GET", "path": "/v2/dm-automations", "desc": "List keyword-triggered DM flows with run stats" },
+        { "method": "POST", "path": "/v2/dm-automations", "desc": "Create a comment-to-DM automation" },
+        { "method": "GET", "path": "/v2/credits", "desc": "Balance, plan and rate limit for the calling key" },
+        { "method": "POST", "path": "/v2/admin/keys", "desc": "Admin only: issue a key to a client" },
+        { "method": "POST", "path": "/mcp", "desc": "JSON-RPC MCP transport" }
+      ],
+      "mcp_tools": [
+        { "name": "blotato_list_accounts", "desc": "Return every connected account with platform, name and ID" },
+        { "name": "blotato_publish_post", "desc": "Publish or schedule to one account; returns submission ID and live URL" },
+        { "name": "blotato_get_post_status", "desc": "Resolve a submission to published, scheduled or failed" },
+        { "name": "blotato_get_analytics", "desc": "Views, likes, comments and shares for a post" },
+        { "name": "blotato_check_credits", "desc": "Plan, remaining credits and rate limit for the calling key" }
+      ],
+      "monetization": [
+        {
+          "tier": "Personal",
+          "price": "$0",
+          "detail": "Master key, unlimited credits, runs on your machine. This is your own engine."
+        },
+        {
+          "tier": "Starter",
+          "price": "$19/mo",
+          "detail": "1,000 credits and 1,800 req/hr. Undercuts Blotato's $29 entry tier."
+        },
+        {
+          "tier": "Pro",
+          "price": "$49/mo",
+          "detail": "5,000 credits and 3,600 req/hr. Aimed at solo operators running several brands."
+        },
+        {
+          "tier": "Agency",
+          "price": "$99/mo",
+          "detail": "Unlimited credits, 10,000 req/hr, white-label docs. For teams reselling social automation."
+        }
+      ],
+      "notes": [
+        "Instagram and Facebook publishing needs a Meta app with instagram_content_publish and pages_manage_posts approved. Until then the connector returns a mock URL.",
+        "X API v2 requires a paid tier for write access. Bearer-only tokens can read but not post.",
+        "Media must be publicly reachable URLs. Local files need hosting first; S3 or Cloudflare R2 both work.",
+        "The database is SQLite. For multi-instance deployments swap DATABASE_URL to Postgres and run Alembic migrations.",
+        "Never expose port 8400 directly. Put it behind Nginx or Caddy with TLS before selling access."
+      ],
+      "faq": [
+        {
+          "q": "Is this the same API as Blotato?",
+          "a": "The request shapes, endpoint paths and MCP tool names are intentionally identical, so existing n8n flows and agent prompts work unchanged. Blotato's own hosted service is a separate product; this is an independent implementation you run yourself."
+        },
+        {
+          "q": "Can I sell access to it?",
+          "a": "Yes. Keys carry plans and credit balances, and the API refuses writes once a key is exhausted. Mint keys with scripts/create_api_key.py, collect payment however you like, top up the balance when they renew."
+        },
+        {
+          "q": "What happens without platform credentials?",
+          "a": "The connector registry falls back to a mock adapter that returns a plausible URL and status. That keeps the full pipeline testable before you have app review approval."
+        },
+        {
+          "q": "Does it store my tokens?",
+          "a": "Platform credentials live in the social_accounts table as JSON alongside the account row. For production, encrypt that column or move credentials to a secrets manager."
+        }
+      ]
+    }
+  ]
+}
