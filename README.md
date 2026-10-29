@@ -86,6 +86,23 @@ GitHub Pages picks up the new `docs/` output automatically.
 
 ---
 
+## Verifying a replica
+
+Every service ships with proof, not claims. For the Blotato Engine:
+
+```bash
+cd services/blotato-engine
+
+curl http://localhost:8400/health      # level 1: is it up
+uv run python tests/test_engine.py     # level 2a: 52 API checks
+uv run python tests/test_features.py   # level 2b: 13 live feature groups
+```
+
+Full instructions, including the 9-screen console walkthrough and a failure table, are in
+[services/blotato-engine/README.md](services/blotato-engine/README.md).
+
+---
+
 ## Local preview
 
 ```bash
