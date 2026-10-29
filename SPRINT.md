@@ -86,6 +86,10 @@ Record the literal numbers. A check that was not executed is not a pass.
 
 Newest first. One line per tick: `HH:MM | action | evidence`
 
+- T+01:40 | zigpoll-engine VERIFIED AND PUBLISHED, row 4 TODO -> DONE | 21/21 on :8630 and 21/21 on override :8631; page 200; commit 68d09a1. Fixed 2 suite bugs (unreachable port override, hard-coded port assertion). Built by hermes, verified by chief
+- T+01:36 | full portfolio re-verified in one pass, all six live | blotato 52+13, lead 50/50, back-in-stock 20/20, churn-buster 21/21, bannerbear 15, zigpoll 21 = 192 checks
+- T+01:30 | bannerbear-engine VERIFIED AND PUBLISHED, row 3 TODO -> DONE | 15 pytest + independent E2E PNG 1080x1350 at 26089B, credit 5 -> 4; commits 11e4401, policy fix ab242f4, 68d09a1
+- T+01:20 | admin password policy unified across catalog, no baked default and no printed secret | bannerbear reverted from generate-and-print to fail-fast with setup instructions; verified fresh DB refuses, existing DB still boots
 - T+00:45 | churn-buster BUILT AND VERIFIED by chief-bot | 21/21 checks passed live :8610, zero 5xx, Stripe webhook round trip
 - T+00:44 | both delegated children confirmed dead | interrupted after 2 API calls each, 685s, zero files written
 - T+00:28 | back-in-stock BUILT AND VERIFIED by chief-bot directly | 20/20 checks passed against live :8600, zero 5xx

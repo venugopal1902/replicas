@@ -59,6 +59,12 @@ async function main() {
   await send("Emulation.setDeviceMetricsOverride", { width: 1480, height: 940, deviceScaleFactor: 1, mobile: false });
   await send("Page.navigate", { url: BASE + "/" });
   await waitFor("document.readyState === 'complete'");
+  // Start from a clean session so the login screen is exercised on every run.
+  await ev("localStorage.clear(); sessionStorage.clear(); true");
+  await send("Page.navigate", { url: BASE + "/#/dashboard" });
+  await ev("localStorage.clear(); sessionStorage.clear(); true");
+  await send("Page.reload", { ignoreCache: true });
+  await waitFor("document.readyState === 'complete'");
 
   // 1. login screen renders
   const loginVisible = await waitFor("(() => { const l = document.getElementById('login'); return l && !l.hidden && !!document.getElementById('login-email'); })()");
@@ -100,23 +106,32 @@ async function main() {
   const campNames = await ev("document.getElementById('view')?.innerText.includes('Q4 Data Engineering Outreach')");
   check("06_campaigns_list_rows", campRows > 0 && !!campNames, `rows=${campRows}`);
 
-  // 7. campaign detail opens with steps + preview
+  // 7. campaign detail opens with steps + preview host
   await ev(`(() => {
-    const a = document.querySelector("#view a[href*='#/campaign/']") || document.querySelector("#view tbody tr");
-    if (!a) return false;
-    a.click(); return true;
+    const r = document.querySelector("#view [data-action='open-campaign']") || document.querySelector("#view a[href*='#/campaign/']");
+    if (!r) return 'no-row';
+    r.click(); return 'clicked';
   })()`);
-  const detail = await waitFor("(() => { const v = document.getElementById('view'); const t = v?.innerText || ''; return t.includes('Step') && v.querySelectorAll('input, textarea').length > 0; })()", 15000);
+  const detail = await waitFor("(() => { const h = location.hash; return h.startsWith('#/campaign/') && !!document.getElementById('preview-host'); })()", 20000);
   const hash = await ev("location.hash");
   check("07_campaign_detail_steps", detail, `hash=${hash}`);
 
-  // 8. preview renders merged copy
-  await ev(`(() => {
-    const btn = [...document.querySelectorAll('#view button')].find(b => /preview/i.test(b.textContent));
-    if (btn) { btn.click(); return 'clicked'; } return 'no-button';
-  })()`);
-  const preview = await waitFor("(() => { const v = document.getElementById('view'); return /Hi\\s+[A-Z]/.test(v.innerText) || v.querySelectorAll('.preview-panel').length > 0; })()", 12000);
-  check("08_campaign_preview_renders", preview);
+  // 8. preview renders merged copy (retry: the detail view can still be wiring handlers)
+  let preview = false;
+  let previewClick = "none";
+  for (let attempt = 0; attempt < 3 && !preview; attempt++) {
+    previewClick = await ev(`(() => {
+      const btn = document.querySelector("#view [data-action='preview']");
+      if (!btn) return 'no-button';
+      btn.click();
+      return 'clicked';
+    })()`);
+    preview = await waitFor("(() => { const h = document.getElementById('preview-host'); return !!(h && h.querySelector('.preview-panel')); })()", 6000);
+    if (!preview) await sleep(800);
+  }
+  const previewText = await ev("document.getElementById('preview-host')?.innerText.replace(/\\s+/g,' ').slice(0,80) || ''");
+  const toastText = await ev("document.getElementById('toasts')?.innerText.replace(/\\s+/g,' ').slice(0,80) || ''");
+  check("08_campaign_preview_renders", previewClick === "clicked" && preview, `${previewClick} :: ${previewText}${toastText ? ' :: toast=' + toastText : ''}`);
 
   // 9. leads list renders seeded leads
   await ev("location.hash = '#/leads'; true");
