@@ -7,8 +7,6 @@ from typing import Any
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
-from .config import settings
-
 HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
 FONT_CANDIDATES = (
     "C:/Windows/Fonts/segoeui.ttf",

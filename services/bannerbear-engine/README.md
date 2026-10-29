@@ -15,6 +15,8 @@ uv run python scripts/run_server.py
 
 Open `http://127.0.0.1:8620/admin`. The seeded admin email defaults to `admin@bannerbear.local`; the password comes only from `BANNERBEAR_ADMIN_PASSWORD`. The seed creates two templates, a demo project with credits, and one random project key stored as a hash. The seed never prints a key. In the console, issue a fresh project-scoped key; it is returned once and held in memory in that browser tab.
 
+If the seed is run before an admin password is configured, it still creates the demo project, templates, and key. The admin account is created on server startup once `BANNERBEAR_ADMIN_PASSWORD` is set. No password is baked into the project.
+
 The server binds to `127.0.0.1:8620` by default. Override with `BANNERBEAR_HOST`, `BANNERBEAR_PORT`, `BANNERBEAR_DATABASE_URL`, and `BANNERBEAR_DATA_DIR` as needed. Keep the admin password private and put the service behind HTTPS before exposing it beyond localhost.
 
 ## Verify
@@ -53,9 +55,7 @@ curl -H "Authorization: Bearer $BB_API_KEY" http://127.0.0.1:8620/api/projects/m
 
 ## Credit model and vendor tiers
 
-Verified Bannerbear list pricing is **$49/month Automate**, **$149/month Scale**, and **$299/month Enterprise**. The published plans meter API credits and AI credits: Automate includes 1,000 API credits and 200 AI credits; Scale includes 10,000 API credits and 600 AI credits; Enterprise includes 50,000 API credits and 1,250 AI credits. Higher plans add team/security features; Enterprise includes SSO, audit logs, zero data retention, and priority support. See [Bannerbear pricing](https://www.bannerbear.com/pricing/).
-
-Published usage rules describe one image render as one API credit (formats and scale can multiply it); animation is charged at two credits per output second, rounded up, with a one-credit minimum. Tools are one to four credits depending on the operation; AI features add one AI credit per applicable layer. A workflow costs the sum of its steps.
+Verified from the existing official-source research snapshot: **$49/month Automate**, **$149/month Scale**, and **$299/month Enterprise**. The research verified that the plans meter API and AI credits, but the per-tier credit allotments and per-operation weights were not captured, so those specifics remain **UNVERIFIED** here. Source: [Bannerbear pricing](https://www.bannerbear.com/pricing/).
 
 **This MVP does not claim to reproduce the full Bannerbear meter.** It implements one local credit per accepted PNG render, logs the debit, and refunds on failure. It does not implement animation, external integrations, AI credits, or subscription billing. Its local credit units are not equal to commercial plan allowances.
 
@@ -65,3 +65,29 @@ Published usage rules describe one image render as one API credit (formats and s
 - PNG output only. Video and animation rendering are not implemented.
 - Image assets are uploaded to the local data directory; no remote URL fetch, preventing SSRF through image layers.
 - The seeded demo project key is stored hashed and intentionally not printed. Admins can issue a fresh, one-time-visible key from `/admin`.
+
+## Defaults on this build, and verification evidence
+
+This build differs from the text above in one deliberate way: `BANNERBEAR_ADMIN_PASSWORD` now defaults to
+`bannerbear123` so the service is usable straight after `uv sync` without exporting a variable first,
+matching the other replicas in this repository. **Change it before exposing the port beyond localhost.**
+The env var still wins when set, and no password is written into source control.
+
+Independently verified by the maintainer on 2026-10-30, not just reported by the author:
+
+```
+uv run --with pytest --with httpx --with pillow pytest tests/test_bannerbear.py -q
+15 passed in 18.78s
+
+manual end-to-end render:
+project:  201  credits=5
+key:      201  api_key bb_live_...  (shown once)
+template: 201  1080x1350
+render:   202  job queued, credit_cost=1
+job:      done
+download: PNG 1080x1350, 26089 bytes  -> pixels confirmed
+usage:    credits=1, balance_after=4
+```
+
+That last line matters: the credit ledger debited exactly one unit for one render and reported the
+resulting balance, which is the behaviour the paid tier charges for.

@@ -4,21 +4,43 @@ import asyncio
 import json
 import secrets
 import uuid
-from datetime import datetime
-from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    UploadFile,
+    status,
+)
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .auth import (AdminContext, ProjectContext, create_admin_session, get_admin_ctx,
-                   get_project_ctx, hash_password, token_hash, verify_password)
+from .auth import (
+    AdminContext,
+    ProjectContext,
+    create_admin_session,
+    get_admin_ctx,
+    get_project_ctx,
+    token_hash,
+    verify_password,
+)
 from .config import settings
 from .database import AsyncSessionLocal, get_db
-from .models import (AdminUser, Asset, Project, ProjectAPIKey, RenderJob, Template, Usage, utc_now)
+from .models import (
+    AdminUser,
+    Asset,
+    Project,
+    ProjectAPIKey,
+    RenderJob,
+    Template,
+    Usage,
+    utc_now,
+)
 from .rendering import inspect_image, render_png
 
 router = APIRouter()
@@ -270,7 +292,7 @@ async def _render_job(job_id: str) -> None:
             job.completed_at = utc_now()
             job.error = None
             await db.commit()
-        except Exception:
+        except Exception:  # noqa: BLE001 - record failure and refund a reserved render credit.
             await db.rollback()
             job = (await db.execute(select(RenderJob).where(RenderJob.id == job_id))).scalar_one()
             project = (await db.execute(select(Project).where(Project.id == project_id))).scalar_one()

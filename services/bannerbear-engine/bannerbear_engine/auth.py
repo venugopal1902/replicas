@@ -3,7 +3,6 @@ import hmac
 import secrets
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Optional
 
 from fastapi import Depends, Header, HTTPException
 from sqlalchemy import select
@@ -15,7 +14,7 @@ from .models import AdminSession, AdminUser, Project, ProjectAPIKey, utc_now
 PBKDF_ROUNDS = 240_000
 
 
-def hash_password(password: str, salt: Optional[str] = None) -> str:
+def hash_password(password: str, salt: str | None = None) -> str:
     salt = salt or secrets.token_hex(16)
     digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), PBKDF_ROUNDS)
     return f"pbkdf2${salt}${digest.hex()}"

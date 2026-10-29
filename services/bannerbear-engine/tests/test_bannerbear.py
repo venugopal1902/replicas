@@ -3,14 +3,17 @@ from __future__ import annotations
 
 import os
 import secrets
+import shutil
+import subprocess
+import sys
 import time
 from pathlib import Path
 
+import httpx
 import pytest
-from fastapi.testclient import TestClient
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
-import sys
 sys.path.insert(0, str(ROOT))
 DATA_DIR = ROOT / "data-test"
 DATA_DIR.mkdir(exist_ok=True)
@@ -23,20 +26,40 @@ os.environ["BANNERBEAR_ADMIN_EMAIL"] = "admin@bannerbear.test"
 os.environ["BANNERBEAR_ADMIN_PASSWORD"] = ADMIN_PASSWORD
 os.environ["BANNERBEAR_DEBUG"] = "false"
 
-from bannerbear_engine.main import app  # noqa: E402
-
 
 @pytest.fixture(scope="module")
 def state():
     data = {"responses": [], "admin_token": None, "project_id": None, "api_key": None,
             "template_id": None, "job_id": None, "before": None, "after": None}
-    with TestClient(app) as client:
-        data["client"] = client
-        yield data
+    environment = os.environ.copy()
+    process = subprocess.Popen(
+        [sys.executable, str(ROOT / "scripts" / "run_server.py")],
+        cwd=ROOT, env=environment, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    client = httpx.Client(base_url="http://127.0.0.1:8620", timeout=15.0)
+    deadline = time.monotonic() + 20
+    while time.monotonic() < deadline:
+        if process.poll() is not None:
+            raise RuntimeError(f"Bannerbear server exited early with {process.returncode}")
+        try:
+            if client.get("/health").status_code == 200:
+                break
+        except httpx.HTTPError:
+            time.sleep(0.1)
+    else:
+        process.terminate()
+        process.wait(timeout=10)
+        raise RuntimeError("Bannerbear server did not become healthy on port 8620")
+    data["client"] = client
+    yield data
+    client.close()
+    process.terminate()
     try:
-        DB_PATH.unlink(missing_ok=True)
-    except PermissionError:
-        pass
+        process.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=5)
+    shutil.rmtree(DATA_DIR, ignore_errors=True)
 
 
 def request(state, method: str, path: str, **kwargs):
@@ -194,7 +217,6 @@ def test_11_admin_console_loads(state):
 
 def test_12_uploaded_image_layer_renders(state):
     import io
-    from PIL import Image
     headers = {"Authorization": f"Bearer {state['api_key']}"}
     buffer = io.BytesIO()
     Image.new("RGBA", (16, 16), (220, 35, 50, 255)).save(buffer, format="PNG")
@@ -238,4 +260,25 @@ def test_14_zero_http_5xx(state):
     failures = [(method, path, code) for method, path, code in state["responses"] if code >= 500]
     assert not failures, f"HTTP 5xx responses: {failures}"
     passed(f"zero HTTP 5xx across {len(state['responses'])} requests")
+
+
+def test_15_seed_script_creates_demo_rows(state):
+    import sqlite3
+    seed_dir = DATA_DIR / "seed-check"
+    database = seed_dir / "seed.db"
+    environment = os.environ.copy()
+    environment["BANNERBEAR_DATABASE_URL"] = f"sqlite+aiosqlite:///{database.as_posix()}"
+    environment["BANNERBEAR_DATA_DIR"] = str(seed_dir)
+    environment["BANNERBEAR_ADMIN_PASSWORD"] = secrets.token_urlsafe(24)
+    result = subprocess.run([sys.executable, str(ROOT / "scripts" / "seed_demo.py")],
+                            cwd=ROOT, env=environment, capture_output=True, text=True, timeout=60, check=False)
+    assert result.returncode == 0, result.stderr
+    with sqlite3.connect(database) as db:
+        project_count = db.execute("SELECT COUNT(*) FROM projects").fetchone()[0]
+        template_count = db.execute("SELECT COUNT(*) FROM templates").fetchone()[0]
+        key_count = db.execute("SELECT COUNT(*) FROM project_api_keys WHERE is_active = 1").fetchone()[0]
+        credit_balance = db.execute("SELECT credits FROM projects LIMIT 1").fetchone()[0]
+    assert (project_count, template_count, key_count) == (1, 2, 1)
+    assert credit_balance > 0
+    passed(f"seed creates 2 templates, 1 project key, credits={credit_balance}; secret not printed")
 

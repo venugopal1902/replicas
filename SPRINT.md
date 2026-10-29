@@ -24,7 +24,7 @@ Build order is top-down. Do not start a lower row while a higher row is TODO.
 | — | lead-engine | SalesQL | $99+/mo | — | DONE | 18 UI + API sweep | LinkedIn to work email, provider keys. Port 8500 |
 | 1 | back-in-stock | Back in Stock by Amp | $19-99/mo | S/M | DONE | 20 | Restock waitlists, queued notifications, preorders, storefront + admin, CSV. Port 8600 |
 | 2 | churn-buster | Churn Buster | $269+/mo | M | DONE | 21 | Dunning campaigns, Stripe-shaped webhook, recovery analytics, admin console, CSV. Port 8610 |
-| 3 | bannerbear-engine | Bannerbear | $49-299/mo | M | TODO | 0 | Template image rendering, async render queue, project-scoped API keys, credit metering. No third-party key needed for core. Port 8620 |
+| 3 | bannerbear-engine | Bannerbear | $49-299/mo | M | DONE | 15 pytest + E2E | Templates, async PNG renders, project keys, credit metering with 402 on empty. Port 8620. Built by hermes, verified + documented by chief |
 | 4 | zigpoll-engine | Zigpoll | $29+/mo | M | TODO | 0 | Survey builder, public embed, response store, exports, signed webhooks. Port 8630 |
 | 5 | geckoboard-engine | Geckoboard | $79/319/mo | M | TODO | 0 | Custom datasets push API, widget composition, TV rotation mode. Port 8640 |
 | 6 | baremetrics-engine | Baremetrics | UNVERIFIED | M/L | TODO | 0 | MRR/ARR metrics from Stripe, churn, forecasting. Port 8650 |

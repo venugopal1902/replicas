@@ -15,8 +15,6 @@ from bannerbear_engine.models import Project, ProjectAPIKey, Template
 
 
 async def seed_demo() -> None:
-    if not settings.ADMIN_PASSWORD:
-        raise RuntimeError("Set BANNERBEAR_ADMIN_PASSWORD before seeding the demo")
     await init_db()
     async with AsyncSessionLocal() as db:
         project = (await db.execute(select(Project).where(Project.name == "Bannerbear Demo"))).scalar_one_or_none()
@@ -46,5 +44,5 @@ async def seed_demo() -> None:
 
 if __name__ == "__main__":
     asyncio.run(seed_demo())
-    print("Seed complete: admin, 2 templates, demo project, and one project-scoped key are ready.")
-    print("Open /admin and issue a fresh key for interactive use; key values are never printed by seed.")
+    print("Seed complete: 2 templates, one demo project, credits, and one hashed project key are ready.")
+    print("Set BANNERBEAR_ADMIN_PASSWORD before server startup; key values are never printed by seed.")

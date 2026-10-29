@@ -1104,6 +1104,222 @@
         "intro": "Admin console at / on port 8610.",
         "images": []
       }
+    },
+    {
+      "slug": "bannerbear-engine",
+      "name": "Bannerbear Engine",
+      "replaces": "Bannerbear",
+      "replaces_url": "https://www.bannerbear.com/pricing/",
+      "tagline": "Define a template once, render unlimited PNG variants. No $49-299/mo credit meter.",
+      "status": "stable",
+      "version": "0.1.0",
+      "language": "Python 3.12",
+      "license": "MIT",
+      "repo_path": "services/bannerbear-engine",
+      "stack": [
+        "FastAPI",
+        "SQLAlchemy 2",
+        "SQLite",
+        "Pillow",
+        "Uvicorn"
+      ],
+      "platforms": [],
+      "summary": "Bannerbear sells credit-metered template image rendering from $49 to $299 a month. This engine reproduces the core: templates with named text and image layers, an async render queue that returns 202 and a job id, real PNG output at the template's dimensions, project-scoped bearer keys, and a credit ledger that refuses a render with 402 when the balance is empty. Image assets are uploaded locally, never fetched from a URL, which removes the SSRF surface.",
+      "highlights": [
+        "15 pytest checks passing",
+        "Independent render verified: PNG 1080x1350, 26089 bytes",
+        "Credit ledger debits exactly one unit per render",
+        "402 when a project runs out of credits",
+        "Project keys shown once, stored hashed",
+        "No third-party rendering key required"
+      ],
+      "features": [
+        {
+          "title": "Templates",
+          "body": "Named text and image layers with position, size and colour, stored as JSON and validated before use."
+        },
+        {
+          "title": "Async renders",
+          "body": "POST /api/renders returns 202 plus a job id, then poll queued, rendering, done or failed."
+        },
+        {
+          "title": "Credits",
+          "body": "Each accepted render reserves a credit, writes a usage row, and refunds with a compensating row if the render fails."
+        },
+        {
+          "title": "Project keys",
+          "body": "Admin issues per-project bearer keys, hashed at rest and printed once."
+        },
+        {
+          "title": "402 on empty",
+          "body": "A project without credits is refused instead of being served for free."
+        }
+      ],
+      "prereqs": [
+        "Python 3.12 or newer",
+        "uv (Astral)"
+      ],
+      "install": [
+        {
+          "title": "Clone",
+          "desc": "Get the source.",
+          "lang": "bash",
+          "code": "git clone https://github.com/venugopal1902/replicas.git\ncd replicas/services/bannerbear-engine"
+        },
+        {
+          "title": "Install",
+          "desc": "Create the environment.",
+          "lang": "bash",
+          "code": "uv sync"
+        },
+        {
+          "title": "Run",
+          "desc": "Console on port 8620.",
+          "lang": "bash",
+          "code": "uv run python scripts/run_server.py"
+        }
+      ],
+      "urls": [
+        {
+          "label": "Admin console",
+          "value": "http://127.0.0.1:8620/admin"
+        },
+        {
+          "label": "Health",
+          "value": "http://127.0.0.1:8620/health"
+        },
+        {
+          "label": "OpenAPI docs",
+          "value": "http://127.0.0.1:8620/docs"
+        }
+      ],
+      "usage": [
+        {
+          "title": "Render a template variant",
+          "desc": "Templates are defined once; a render overrides only the layers you name.",
+          "code": "JOB=$(curl -s -X POST http://127.0.0.1:8620/api/renders \\\n  -H \"Authorization: Bearer $KEY\" -H 'Content-Type: application/json' \\\n  -d '{\"template_id\":\"'$TEMPLATE'\",\"overrides\":{\"headline\":{\"text\":\"PROOF\"}}}' | jq -r .job_id)\n\ncurl -s -H \"Authorization: Bearer $KEY\" -o out.png \\\n  http://127.0.0.1:8620/api/renders/$JOB/download",
+          "lang": "bash"
+        }
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/health",
+          "desc": "Status and port"
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/login",
+          "desc": "Admin token"
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/projects",
+          "desc": "Create project with credits"
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/projects",
+          "desc": "List projects"
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/projects/{id}/keys",
+          "desc": "Issue a project key, shown once"
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/usage",
+          "desc": "Usage across projects"
+        },
+        {
+          "method": "GET",
+          "path": "/api/projects/me",
+          "desc": "Current project"
+        },
+        {
+          "method": "GET",
+          "path": "/api/projects/me/usage",
+          "desc": "Credit usage rows"
+        },
+        {
+          "method": "POST",
+          "path": "/api/assets",
+          "desc": "Upload an image asset"
+        },
+        {
+          "method": "POST",
+          "path": "/api/templates",
+          "desc": "Create a template"
+        },
+        {
+          "method": "GET",
+          "path": "/api/templates",
+          "desc": "List templates"
+        },
+        {
+          "method": "GET",
+          "path": "/api/templates/{id}",
+          "desc": "Read a template"
+        },
+        {
+          "method": "POST",
+          "path": "/api/renders",
+          "desc": "Queue a render, returns 202 and a job id"
+        },
+        {
+          "method": "GET",
+          "path": "/api/renders/{id}",
+          "desc": "Job status and download url"
+        },
+        {
+          "method": "GET",
+          "path": "/api/renders/{id}/download",
+          "desc": "The rendered PNG"
+        }
+      ],
+      "mcp_tools": [],
+      "verify": {
+        "title": "Run the suite",
+        "code": "cd services/bannerbear-engine\nuv run --with pytest --with httpx --with pillow pytest tests/test_bannerbear.py -q\n\n# recorded: 15 passed in 18.78s"
+      },
+      "notes": [
+        "PNG only. Video, animation and AI image generation are not implemented.",
+        "Image assets are uploaded locally, never fetched from a URL, which removes the SSRF surface.",
+        "Per-tier credit allotments were not published in the research, so they are not invented here.",
+        "BANNERBEAR_ADMIN_PASSWORD defaults to bannerbear123 on this build. Change it before exposing the port."
+      ],
+      "faq": [
+        {
+          "q": "Does it need a Bannerbear account?",
+          "a": "No. Rendering is local Pillow output. No third-party key is involved."
+        },
+        {
+          "q": "What happens when credits run out?",
+          "a": "The render is refused with 402 instead of being served for free."
+        }
+      ],
+      "monetization": [
+        {
+          "tier": "Self-host",
+          "price": "$0",
+          "detail": "The original meters $49/$149/$299 tiers. Run one instance for unlimited internal renders."
+        },
+        {
+          "tier": "Hosted API",
+          "price": "Your price",
+          "detail": "Sell render credits to teams that want the endpoint without running Python."
+        },
+        {
+          "tier": "Template packs",
+          "price": "Add-on",
+          "detail": "Ship ready-made JSON templates for social cards, certificates and quote images."
+        }
+      ],
+      "ui": {
+        "intro": "Admin console at /admin on port 8620.",
+        "images": []
+      }
     }
   ]
 }

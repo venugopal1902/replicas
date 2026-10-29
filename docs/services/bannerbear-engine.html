@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bannerbear Engine · Replicas</title>
+<meta name="description" content="Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.">
+<meta property="og:title" content="Bannerbear Engine · Replicas">
+<meta property="og:description" content="Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236ee7b7'/><text x='16' y='23' font-size='19' font-family='monospace' font-weight='bold' text-anchor='middle' fill='%23061010'>R</text></svg>">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html">
+      <span class="logo">R</span>
+      <span>Replicas</span>
+    </a>
+    <div class="nav-links">
+      <a href="../index.html#services">Services</a>
+      <a href="../index.html#how">How it works</a>
+      <a href="../index.html#stack">Tech</a>
+      <a class="gh-btn" href="https://github.com/venugopal1902/replicas">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div class="doc">
+    <aside class="side">
+      <h5>On this page</h5>
+      <ul><li><a href="#overview">Overview</a></li><li><a href="#ui">Interface</a></li><li><a href="#install">Install</a></li><li><a href="#usage">Usage</a></li><li><a href="#api">API reference</a></li><li><a href="#mcp">MCP tools</a></li><li><a href="#monetize">Monetize</a></li><li><a href="#notes">Operational notes</a></li><li><a href="#faq">FAQ</a></li><h5>Source</h5><ul><li><a href="https://github.com/venugopal1902/replicas/tree/main/services/bannerbear-engine">Repository</a></li></ul></ul>
+    </aside>
+    <article class="content">
+      <a class="back" href="../index.html">&larr; All services</a>
+      <h1>Bannerbear Engine</h1>
+      <p class="lede" style="font-size:17px">Define a template once, render unlimited PNG variants. No $49-299/mo credit meter.</p>
+      <div class="doc-meta">
+        <span>Replaces <b>Bannerbear</b></span>
+        <span>Version <b>0.1.0</b></span>
+        <span>License <b>MIT</b></span>
+        <span>Runtime <b>Python 3.12</b></span>
+      </div>
+      <h2 id="overview">Overview<a class="anchor-link" href="#overview">#</a></h2><p>Bannerbear sells credit-metered template image rendering from $49 to $299 a month. This engine reproduces the core: templates with named text and image layers, an async render queue that returns 202 and a job id, real PNG output at the template&#x27;s dimensions, project-scoped bearer keys, and a credit ledger that refuses a render with 402 when the balance is empty. Image assets are uploaded locally, never fetched from a URL, which removes the SSRF surface.</p><div class="pill-row"><span class="chip">replaces Bannerbear</span><span class="chip">v0.1.0</span><span class="chip">MIT</span><span class="chip">Python 3.12</span></div><h3>What you get</h3><ul><li>15 pytest checks passing</li><li>Independent render verified: PNG 1080x1350, 26089 bytes</li><li>Credit ledger debits exactly one unit per render</li><li>402 when a project runs out of credits</li><li>Project keys shown once, stored hashed</li><li>No third-party rendering key required</li></ul><div class="feature-grid"><div class="feature"><h4>Templates</h4><p>Named text and image layers with position, size and colour, stored as JSON and validated before use.</p></div><div class="feature"><h4>Async renders</h4><p>POST /api/renders returns 202 plus a job id, then poll queued, rendering, done or failed.</p></div><div class="feature"><h4>Credits</h4><p>Each accepted render reserves a credit, writes a usage row, and refunds with a compensating row if the render fails.</p></div><div class="feature"><h4>Project keys</h4><p>Admin issues per-project bearer keys, hashed at rest and printed once.</p></div><div class="feature"><h4>402 on empty</h4><p>A project without credits is refused instead of being served for free.</p></div></div><h2 id="ui">Interface<a class="anchor-link" href="#ui">#</a></h2><p>Admin console at /admin on port 8620.</p><div class="shots"></div><h2 id="install">Install<a class="anchor-link" href="#install">#</a></h2><p>From a clean machine to a running server in four commands.</p><h3>Requirements</h3><ul><li>Python 3.12 or newer</li><li>uv (Astral)</li></ul><h3>Step 1 &middot; Clone</h3><p>Get the source.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">git clone https://github.com/venugopal1902/replicas.git
+cd replicas/services/bannerbear-engine</code></pre></div><h3>Step 2 &middot; Install</h3><p>Create the environment.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">uv sync</code></pre></div><h3>Step 3 &middot; Run</h3><p>Console on port 8620.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">uv run python scripts/run_server.py</code></pre></div><h3>Run the suite</h3><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">cd services/bannerbear-engine
+uv run --with pytest --with httpx --with pillow pytest tests/test_bannerbear.py -q
+
+# recorded: 15 passed in 18.78s</code></pre></div><div class="table-wrap"><table><thead><tr><th>Surface</th><th>URL</th></tr></thead><tbody><tr><td>Admin console</td><td><code>http://127.0.0.1:8620/admin</code></td></tr><tr><td>Health</td><td><code>http://127.0.0.1:8620/health</code></td></tr><tr><td>OpenAPI docs</td><td><code>http://127.0.0.1:8620/docs</code></td></tr></tbody></table></div><h2 id="usage">Usage<a class="anchor-link" href="#usage">#</a></h2><h3>Render a template variant</h3><p>Templates are defined once; a render overrides only the layers you name.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">JOB=$(curl -s -X POST http://127.0.0.1:8620/api/renders \
+  -H &quot;Authorization: Bearer $KEY&quot; -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;template_id&quot;:&quot;&#x27;$TEMPLATE&#x27;&quot;,&quot;overrides&quot;:{&quot;headline&quot;:{&quot;text&quot;:&quot;PROOF&quot;}}}&#x27; | jq -r .job_id)
+
+curl -s -H &quot;Authorization: Bearer $KEY&quot; -o out.png \
+  http://127.0.0.1:8620/api/renders/$JOB/download</code></pre></div><h2 id="api">API reference<a class="anchor-link" href="#api">#</a></h2><div class="table-wrap"><table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td><span class="method get">GET</span></td><td><code>/health</code></td><td>Status and port</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/auth/login</code></td><td>Admin token</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/admin/projects</code></td><td>Create project with credits</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/admin/projects</code></td><td>List projects</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/admin/projects/{id}/keys</code></td><td>Issue a project key, shown once</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/admin/usage</code></td><td>Usage across projects</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/projects/me</code></td><td>Current project</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/projects/me/usage</code></td><td>Credit usage rows</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/assets</code></td><td>Upload an image asset</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/templates</code></td><td>Create a template</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/templates</code></td><td>List templates</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/templates/{id}</code></td><td>Read a template</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/renders</code></td><td>Queue a render, returns 202 and a job id</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/renders/{id}</code></td><td>Job status and download url</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/renders/{id}/download</code></td><td>The rendered PNG</td></tr></tbody></table></div><h2 id="monetize">Monetize<a class="anchor-link" href="#monetize">#</a></h2><p>The billing layer is built in. Keys carry a plan, a credit balance and an hourly ceiling, so you can resell access without writing auth code.</p><div class="price-grid"><div class="price"><h4>Self-host</h4><b>$0</b><p>The original meters $49/$149/$299 tiers. Run one instance for unlimited internal renders.</p></div><div class="price"><h4>Hosted API</h4><b>Your price</b><p>Sell render credits to teams that want the endpoint without running Python.</p></div><div class="price"><h4>Template packs</h4><b>Add-on</b><p>Ship ready-made JSON templates for social cards, certificates and quote images.</p></div></div><div class="callout"><b>Ship it publicly:</b> put the service behind Caddy or Nginx with TLS, point a subdomain at it, then hand clients <code>https://api.yourdomain.com/v2</code> and their own key.</div><h2 id="notes">Operational notes<a class="anchor-link" href="#notes">#</a></h2><div class="callout warn"><b>Read before going live.</b> These are the things that break in production.</div><ul><li>PNG only. Video, animation and AI image generation are not implemented.</li><li>Image assets are uploaded locally, never fetched from a URL, which removes the SSRF surface.</li><li>Per-tier credit allotments were not published in the research, so they are not invented here.</li><li>BANNERBEAR_ADMIN_PASSWORD defaults to bannerbear123 on this build. Change it before exposing the port.</li></ul><h2 id="faq">FAQ<a class="anchor-link" href="#faq">#</a></h2><details><summary>Does it need a Bannerbear account?</summary><p>No. Rendering is local Pillow output. No third-party key is involved.</p></details><details><summary>What happens when credits run out?</summary><p>The render is refused with 402 instead of being served for free.</p></details>
+    </article>
+  </div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>&copy; Gubbala Venu Gopal</span>
+    <span>Replicas &middot; self-hosted replacements</span>
+    <span class="sp"><a href="https://github.com/venugopal1902/replicas">Source on GitHub</a></span>
+  </div>
+</footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
