@@ -126,6 +126,35 @@ See [docs/api-contract.md](docs/api-contract.md) for the complete route contract
 }
 ```
 
+## Troubleshooting sign-in
+
+If the login card rejects you:
+
+```bash
+cd C:/Users/venug/Desktop/replicas/services/lead-engine
+
+# 1. Is the engine up?
+curl http://localhost:8500/health
+
+# 2. Which accounts exist?
+uv run python scripts/set_password.py --list
+
+# 3. Set a known password
+uv run python scripts/set_password.py --email admin@leadengine.local --password leadengine123
+
+# 4. Prove the credentials work without a browser
+curl -X POST http://localhost:8500/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@leadengine.local","password":"leadengine123"}'
+```
+
+A `200` with a `token` means the backend is fine and the problem is browser state: clear the site
+data for `localhost:8500` (the app stores a session token in `localStorage`), or open a private
+window. A `401` means the password is wrong — use step 3.
+
+The login screen now prints the engine origin and the reset command, and distinguishes
+"cannot reach the API" from "wrong email or password".
+
 ## Development/seed credentials
 
 Fresh database seed:

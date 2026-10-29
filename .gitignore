@@ -38,3 +38,6 @@ services/lead-engine/data/
 services/lead-engine/.tmp-chrome/
 
 __pycache__/
+
+# lead engine chrome test profiles
+services/lead-engine/.tmp-chrome*/

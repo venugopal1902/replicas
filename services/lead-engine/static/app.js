@@ -83,6 +83,8 @@
     $("#app").hidden = true;
     $("#login").hidden = false;
     $("#login-error").textContent = message || "";
+    const originEl = $("#login-origin");
+    if (originEl) originEl.textContent = "Engine: " + location.origin;
   }
 
   function showApp() {
@@ -1682,7 +1684,20 @@
       if (!location.hash || location.hash === "#/" || location.hash === "#") location.hash = "#/dashboard";
       await render();
     } catch (err) {
-      errEl.textContent = err.message || "Sign in failed";
+      const msg = String((err && err.message) || "Sign in failed");
+      if (/network|failed to fetch|load failed/i.test(msg)) {
+        errEl.textContent =
+          "Cannot reach the API at " + location.origin +
+          ". Start the server with: uv run python scripts/run_server.py";
+      } else if (/invalid email or password|401/i.test(msg)) {
+        errEl.textContent =
+          "Wrong email or password. If you changed it, reset it with scripts/set_password.py.";
+      } else if (/disabled|403/i.test(msg)) {
+        errEl.textContent = "This account is disabled. Re-enable it with scripts/set_password.py --email " +
+          $("login-email").value.trim() + " --password <new>";
+      } else {
+        errEl.textContent = msg;
+      }
     } finally {
       btn.disabled = false;
     }
