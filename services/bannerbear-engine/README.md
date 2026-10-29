@@ -68,32 +68,30 @@ Verified from the existing official-source research snapshot: **$49/month Automa
 
 ## First-run admin password, and verification evidence
 
-There is **no baked default password** and there is also no lockout. On first boot, if
-`BANNERBEAR_ADMIN_PASSWORD` is not set, the service generates a unique password, prints it once to the
-console, and stores only its hash:
+There is **no baked default and no printed secret**. On first boot, if no admin account exists and
+`BANNERBEAR_ADMIN_PASSWORD` is not set, startup fails with instructions rather than inventing a
+credential or writing one to a log:
 
 ```
-================================================================
-No BANNERBEAR_ADMIN_PASSWORD was set. Generated a unique one for this install.
-  admin email:    admin@bannerbear.local
-  admin password: <16 random characters, shown once>
-Shown once. Only its hash is stored. Save it, or set
-BANNERBEAR_ADMIN_PASSWORD before first boot to choose your own.
-================================================================
+RuntimeError: No admin account exists and BANNERBEAR_ADMIN_PASSWORD is not set.
+Set it before the first start, for example:
+  export BANNERBEAR_ADMIN_PASSWORD='choose-a-long-unique-password'
+Only a PBKDF2 hash is stored. No default password ships with this service.
+ERROR:    Application startup failed. Exiting.
 ```
 
-Set `BANNERBEAR_ADMIN_PASSWORD` before the first boot to choose your own. Either way no known credential
-ever ships in the source, which matters because the port is network-bound.
+Existing installs that already have an admin row are unaffected and start normally.
 
 Verified on this machine by the maintainer:
 
 ```
-first boot with no password set:
-  generated password length: 16
-  login with baked default 'bannerbear123' -> 401   (no known default exists)
-  login with the generated password        -> 200 + access token
-  RESULT: PASS - unique password on first boot, no baked default, no lockout
+fresh database, no password set  -> startup refused with the message above
+existing database with an admin  -> /health 200, service online
+login with baked default 'bannerbear123' -> 401   (no known default exists)
 ```
+
+Policy note: an earlier revision of this build generated a password and printed it once. That was
+reverted, because a secret written into console output still ends up in logs and shell history.
 
 Independently verified render, not just the author's suite:
 

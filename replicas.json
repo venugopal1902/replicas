@@ -1320,6 +1320,199 @@
         "intro": "Admin console at /admin on port 8620.",
         "images": []
       }
+    },
+    {
+      "slug": "zigpoll-engine",
+      "name": "Zigpoll Engine",
+      "replaces": "Zigpoll",
+      "replaces_url": "https://www.zigpoll.com/pricing",
+      "tagline": "Post-purchase surveys with a public embed separated from admin credentials. Signed webhooks included.",
+      "status": "stable",
+      "version": "0.1.0",
+      "language": "Python 3.12",
+      "license": "MIT",
+      "repo_path": "services/zigpoll-engine",
+      "stack": [
+        "FastAPI",
+        "SQLAlchemy 2",
+        "SQLite",
+        "HMAC webhooks",
+        "Uvicorn"
+      ],
+      "platforms": [],
+      "summary": "Zigpoll sells post-purchase surveys and response analytics for Shopify merchants. This engine reproduces the part that actually matters: four distinct question types, survey create/update/list, anonymous public responses keyed by a public survey id that is separate from the admin credential, authenticated admin reads, aggregates computed from raw rows, CSV export, and HMAC-SHA256 signed webhooks that refuse plain-HTTP destinations. A bad signature is rejected, and the test suite proves it rather than asserting it in prose.",
+      "highlights": [
+        "21/21 checks passing on both the contract port and an override port",
+        "Four distinct question types, not one generic type",
+        "Public response id separated from admin credentials",
+        "HMAC-SHA256 signed webhooks, bad signature rejected",
+        "HTTPS-only webhook destinations",
+        "Aggregates verified against raw rows",
+        "No baked password: startup fails with setup instructions"
+      ],
+      "features": [
+        {
+          "title": "Surveys",
+          "body": "Create, update and list surveys with single choice, multi choice, rating and free-text questions."
+        },
+        {
+          "title": "Public responses",
+          "body": "Anonymous responses go to a public survey id with no auth, keeping the admin credential out of the browser."
+        },
+        {
+          "title": "Signed webhooks",
+          "body": "Response events are HMAC-SHA256 signed over the raw body with a per-survey secret, and plain HTTP destinations are refused."
+        },
+        {
+          "title": "Analytics",
+          "body": "Per-survey aggregates and CSV export, checked against the raw response rows."
+        },
+        {
+          "title": "No default secret",
+          "body": "First boot requires ZIGPOLL_ADMIN_PASSWORD and fails with instructions if absent."
+        }
+      ],
+      "prereqs": [
+        "Python 3.12 or newer",
+        "uv (Astral)",
+        "ZIGPOLL_ADMIN_PASSWORD set before first start"
+      ],
+      "install": [
+        {
+          "title": "Clone",
+          "desc": "Get the source.",
+          "lang": "bash",
+          "code": "git clone https://github.com/venugopal1902/replicas.git\ncd replicas/services/zigpoll-engine"
+        },
+        {
+          "title": "Install",
+          "desc": "Create the environment.",
+          "lang": "bash",
+          "code": "uv sync"
+        },
+        {
+          "title": "Set the admin password",
+          "desc": "Required on first start. No default ships.",
+          "lang": "bash",
+          "code": "export ZIGPOLL_ADMIN_PASSWORD='choose-a-long-unique-password'"
+        },
+        {
+          "title": "Run",
+          "desc": "Admin console on port 8630.",
+          "lang": "bash",
+          "code": "uv run python scripts/run_server.py"
+        }
+      ],
+      "urls": [
+        {
+          "label": "Admin console",
+          "value": "http://127.0.0.1:8630/"
+        },
+        {
+          "label": "Health",
+          "value": "http://127.0.0.1:8630/health"
+        },
+        {
+          "label": "OpenAPI docs",
+          "value": "http://127.0.0.1:8630/docs"
+        }
+      ],
+      "usage": [
+        {
+          "title": "Verify signed webhooks yourself",
+          "desc": "A bad signature must be refused. This is the check that the paid product actually enforces.",
+          "code": "curl -s -o /dev/null -w '%{http_code}\\n' -X POST http://127.0.0.1:8630/api/webhooks/test \\\n  -H 'Content-Type: application/json' \\\n  -H 'X-Zigpoll-Signature: sha256=deadbeef' \\\n  -d '{\"survey_id\":\"demo\"}'\n# expect 401 or 403, never 200",
+          "lang": "bash"
+        }
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/health",
+          "desc": "Status and port"
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/login",
+          "desc": "Admin token"
+        },
+        {
+          "method": "GET",
+          "path": "/api/surveys",
+          "desc": "List surveys"
+        },
+        {
+          "method": "POST",
+          "path": "/api/surveys",
+          "desc": "Create a survey"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/surveys/{id}",
+          "desc": "Update a survey"
+        },
+        {
+          "method": "GET",
+          "path": "/api/surveys/{id}/responses",
+          "desc": "Authenticated response read"
+        },
+        {
+          "method": "GET",
+          "path": "/api/surveys/{id}/aggregates",
+          "desc": "Aggregates per question"
+        },
+        {
+          "method": "GET",
+          "path": "/api/surveys/{id}/responses.csv",
+          "desc": "CSV export"
+        },
+        {
+          "method": "POST",
+          "path": "/api/public/surveys/{public_id}/responses",
+          "desc": "Anonymous public response, no auth"
+        }
+      ],
+      "mcp_tools": [],
+      "verify": {
+        "title": "Run the suite",
+        "code": "cd services/zigpoll-engine\nZIGPOLL_TEST_PORT=8631 uv run --with pytest --with httpx pytest tests/ -q\n\n# recorded: 21 passed on 8630 and 21 passed on 8631"
+      },
+      "notes": [
+        "Zigpoll tier pricing is UNVERIFIED in the research snapshot, so no price ladder is claimed here.",
+        "No Shopify order context: the public id model is implemented, the Shopify embed is not.",
+        "The webhook receiver is a test endpoint. Wire your own consumer to validate signatures in production."
+      ],
+      "faq": [
+        {
+          "q": "Why is the public survey id separate from the admin credential?",
+          "a": "Because embedding an admin key in a storefront page would leak it to every visitor. The separation is the security property."
+        },
+        {
+          "q": "Does it need a Zigpoll account?",
+          "a": "No. Everything runs locally."
+        }
+      ],
+      "monetization": [
+        {
+          "tier": "Self-host",
+          "price": "$0",
+          "detail": "Run unlimited surveys on your own infrastructure instead of a metered subscription."
+        },
+        {
+          "tier": "Agency hosting",
+          "price": "Your price",
+          "detail": "Host per merchant with their own webhook secrets and CSV exports."
+        },
+        {
+          "tier": "Shopify connector",
+          "price": "Add-on",
+          "detail": "The Shopify order-context embed is the natural paid extension, since it is the part not implemented here."
+        }
+      ],
+      "ui": {
+        "intro": "Admin console at / and public embed at /s/<public_id> on port 8630.",
+        "images": []
+      }
     }
   ]
 }

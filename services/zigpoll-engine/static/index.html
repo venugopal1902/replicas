@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zigpoll Engine</title><link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<div class="shell">
+  <header class="topbar"><a class="brand" href="/"><span class="brand-mark">Z</span><span>Zigpoll <small>ENGINE</small></span></a><div class="status"><i></i> LOCAL INSTANCE</div></header>
+  <main>
+    <section id="login-view" class="login-wrap">
+      <div class="login-copy"><div class="eyebrow">SURVEY OPERATIONS</div><h1>Turn responses<br>into signal.</h1><p>Manage surveys, collect public responses, inspect aggregate results, and export clean data.</p></div>
+      <form id="login-form" class="panel login-panel"><div class="panel-kicker">ADMIN ACCESS</div><h2>Sign in</h2><label>Email<input name="email" type="email" autocomplete="username" required></label><label>Password<input name="password" type="password" autocomplete="current-password" required></label><button class="button primary" type="submit">Open workspace <span>→</span></button><p id="login-error" class="error" role="status"></p><p class="hint">Set <code>ZIGPOLL_ADMIN_PASSWORD</code> before the first server start.</p></form>
+    </section>
+    <section id="app-view" hidden>
+      <div class="page-heading"><div><div class="eyebrow">WORKSPACE / SURVEYS</div><h1>Your surveys</h1><p class="muted">Public links are independent from admin credentials.</p></div><button id="logout" class="button quiet">Sign out</button></div>
+      <div class="grid">
+        <section class="panel create-panel"><div class="panel-kicker">NEW SURVEY</div><h2>Build a survey</h2><form id="create-form"><label>Title<input name="title" required maxlength="200" placeholder="Post-purchase feedback"></label><label>Description<textarea name="description" rows="2" maxlength="2000" placeholder="A short note for respondents"></textarea></label><label>Webhook URL <span class="hint inline">optional, HTTPS only</span><input name="webhook_url" type="url" placeholder="https://example.com/webhooks/zigpoll"></label><label>Questions <span class="hint inline">JSON, with distinct question types</span><textarea name="questions" rows="13" spellcheck="false">[
+  {"id":"satisfaction","label":"How was your experience?","type":"rating","min_value":1,"max_value":5,"required":true},
+  {"id":"reason","label":"What stood out?","type":"single_choice","options":["Quality","Speed","Support"],"required":true},
+  {"id":"features","label":"Which features did you use?","type":"multi_choice","options":["Dashboard","Reports","Integrations"],"required":false},
+  {"id":"comment","label":"Anything else?","type":"free_text","required":false}
+]</textarea></label><button class="button primary" type="submit">Create survey <span>→</span></button><p id="create-error" class="error" role="status"></p></form><div id="secret-notice" class="secret-notice" hidden><b>Webhook secret, shown once</b><p>Copy this into your webhook consumer now. It is not shown again.</p><input id="secret-value" readonly><button id="copy-secret" class="button quiet" type="button">Copy secret</button></div></section>
+        <section class="panel list-panel"><div class="list-head"><div><div class="panel-kicker">LIVE DATA</div><h2>Survey library</h2></div><button id="refresh" class="button quiet">Refresh</button></div><div id="survey-list" class="survey-list"><div class="empty">Sign in to load surveys.</div></div></section>
+      </div>
+      <section id="detail-panel" class="panel detail-panel" hidden><div class="detail-head"><div><div class="panel-kicker">SURVEY INSIGHTS</div><h2 id="detail-title"></h2></div><div class="actions"><a id="csv-link" class="button quiet" href="#">Export CSV</a><a id="embed-link" class="button quiet" href="#" target="_blank" rel="noopener">Open embed</a></div></div><div id="aggregates" class="aggregate-grid"></div><div class="response-head"><h3>Responses</h3><span id="response-count" class="count-pill">0</span></div><div id="responses" class="responses"></div></section>
+    </section>
+  </main>
+  <footer>Local-first survey engine <span>•</span> No external assets</footer>
+</div>
+<script src="/static/app.js" defer></script>
+</body></html>

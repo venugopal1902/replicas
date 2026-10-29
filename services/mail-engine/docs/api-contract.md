@@ -1,6 +1,6 @@
 # Mail Engine API contract (v0.1.0)
 
-Base URL: `http://localhost:8600`. JSON everywhere. Auth via `Authorization: Bearer <token>`
+Base URL: `http://localhost:8640`. JSON everywhere. Auth via `Authorization: Bearer <token>`
 or the `mail_session` cookie set by login.
 
 Seeded login: `admin@mailengine.local` / `mailengine123`.

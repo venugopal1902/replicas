@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zigpoll Engine · Replicas</title>
+<meta name="description" content="Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.">
+<meta property="og:title" content="Zigpoll Engine · Replicas">
+<meta property="og:description" content="Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236ee7b7'/><text x='16' y='23' font-size='19' font-family='monospace' font-weight='bold' text-anchor='middle' fill='%23061010'>R</text></svg>">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html">
+      <span class="logo">R</span>
+      <span>Replicas</span>
+    </a>
+    <div class="nav-links">
+      <a href="../index.html#services">Services</a>
+      <a href="../index.html#how">How it works</a>
+      <a href="../index.html#stack">Tech</a>
+      <a class="gh-btn" href="https://github.com/venugopal1902/replicas">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div class="doc">
+    <aside class="side">
+      <h5>On this page</h5>
+      <ul><li><a href="#overview">Overview</a></li><li><a href="#ui">Interface</a></li><li><a href="#install">Install</a></li><li><a href="#usage">Usage</a></li><li><a href="#api">API reference</a></li><li><a href="#mcp">MCP tools</a></li><li><a href="#monetize">Monetize</a></li><li><a href="#notes">Operational notes</a></li><li><a href="#faq">FAQ</a></li><h5>Source</h5><ul><li><a href="https://github.com/venugopal1902/replicas/tree/main/services/zigpoll-engine">Repository</a></li></ul></ul>
+    </aside>
+    <article class="content">
+      <a class="back" href="../index.html">&larr; All services</a>
+      <h1>Zigpoll Engine</h1>
+      <p class="lede" style="font-size:17px">Post-purchase surveys with a public embed separated from admin credentials. Signed webhooks included.</p>
+      <div class="doc-meta">
+        <span>Replaces <b>Zigpoll</b></span>
+        <span>Version <b>0.1.0</b></span>
+        <span>License <b>MIT</b></span>
+        <span>Runtime <b>Python 3.12</b></span>
+      </div>
+      <h2 id="overview">Overview<a class="anchor-link" href="#overview">#</a></h2><p>Zigpoll sells post-purchase surveys and response analytics for Shopify merchants. This engine reproduces the part that actually matters: four distinct question types, survey create/update/list, anonymous public responses keyed by a public survey id that is separate from the admin credential, authenticated admin reads, aggregates computed from raw rows, CSV export, and HMAC-SHA256 signed webhooks that refuse plain-HTTP destinations. A bad signature is rejected, and the test suite proves it rather than asserting it in prose.</p><div class="pill-row"><span class="chip">replaces Zigpoll</span><span class="chip">v0.1.0</span><span class="chip">MIT</span><span class="chip">Python 3.12</span></div><h3>What you get</h3><ul><li>21/21 checks passing on both the contract port and an override port</li><li>Four distinct question types, not one generic type</li><li>Public response id separated from admin credentials</li><li>HMAC-SHA256 signed webhooks, bad signature rejected</li><li>HTTPS-only webhook destinations</li><li>Aggregates verified against raw rows</li><li>No baked password: startup fails with setup instructions</li></ul><div class="feature-grid"><div class="feature"><h4>Surveys</h4><p>Create, update and list surveys with single choice, multi choice, rating and free-text questions.</p></div><div class="feature"><h4>Public responses</h4><p>Anonymous responses go to a public survey id with no auth, keeping the admin credential out of the browser.</p></div><div class="feature"><h4>Signed webhooks</h4><p>Response events are HMAC-SHA256 signed over the raw body with a per-survey secret, and plain HTTP destinations are refused.</p></div><div class="feature"><h4>Analytics</h4><p>Per-survey aggregates and CSV export, checked against the raw response rows.</p></div><div class="feature"><h4>No default secret</h4><p>First boot requires ZIGPOLL_ADMIN_PASSWORD and fails with instructions if absent.</p></div></div><h2 id="ui">Interface<a class="anchor-link" href="#ui">#</a></h2><p>Admin console at / and public embed at /s/&lt;public_id&gt; on port 8630.</p><div class="shots"></div><h2 id="install">Install<a class="anchor-link" href="#install">#</a></h2><p>From a clean machine to a running server in four commands.</p><h3>Requirements</h3><ul><li>Python 3.12 or newer</li><li>uv (Astral)</li><li>ZIGPOLL_ADMIN_PASSWORD set before first start</li></ul><h3>Step 1 &middot; Clone</h3><p>Get the source.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">git clone https://github.com/venugopal1902/replicas.git
+cd replicas/services/zigpoll-engine</code></pre></div><h3>Step 2 &middot; Install</h3><p>Create the environment.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">uv sync</code></pre></div><h3>Step 3 &middot; Set the admin password</h3><p>Required on first start. No default ships.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">export ZIGPOLL_ADMIN_PASSWORD=&#x27;choose-a-long-unique-password&#x27;</code></pre></div><h3>Step 4 &middot; Run</h3><p>Admin console on port 8630.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">uv run python scripts/run_server.py</code></pre></div><h3>Run the suite</h3><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">cd services/zigpoll-engine
+ZIGPOLL_TEST_PORT=8631 uv run --with pytest --with httpx pytest tests/ -q
+
+# recorded: 21 passed on 8630 and 21 passed on 8631</code></pre></div><div class="table-wrap"><table><thead><tr><th>Surface</th><th>URL</th></tr></thead><tbody><tr><td>Admin console</td><td><code>http://127.0.0.1:8630/</code></td></tr><tr><td>Health</td><td><code>http://127.0.0.1:8630/health</code></td></tr><tr><td>OpenAPI docs</td><td><code>http://127.0.0.1:8630/docs</code></td></tr></tbody></table></div><h2 id="usage">Usage<a class="anchor-link" href="#usage">#</a></h2><h3>Verify signed webhooks yourself</h3><p>A bad signature must be refused. This is the check that the paid product actually enforces.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">curl -s -o /dev/null -w &#x27;%{http_code}\n&#x27; -X POST http://127.0.0.1:8630/api/webhooks/test \
+  -H &#x27;Content-Type: application/json&#x27; \
+  -H &#x27;X-Zigpoll-Signature: sha256=deadbeef&#x27; \
+  -d &#x27;{&quot;survey_id&quot;:&quot;demo&quot;}&#x27;
+# expect 401 or 403, never 200</code></pre></div><h2 id="api">API reference<a class="anchor-link" href="#api">#</a></h2><div class="table-wrap"><table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td><span class="method get">GET</span></td><td><code>/health</code></td><td>Status and port</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/auth/login</code></td><td>Admin token</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/surveys</code></td><td>List surveys</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/surveys</code></td><td>Create a survey</td></tr><tr><td><span class="method post">PATCH</span></td><td><code>/api/surveys/{id}</code></td><td>Update a survey</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/surveys/{id}/responses</code></td><td>Authenticated response read</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/surveys/{id}/aggregates</code></td><td>Aggregates per question</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/surveys/{id}/responses.csv</code></td><td>CSV export</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/public/surveys/{public_id}/responses</code></td><td>Anonymous public response, no auth</td></tr></tbody></table></div><h2 id="monetize">Monetize<a class="anchor-link" href="#monetize">#</a></h2><p>The billing layer is built in. Keys carry a plan, a credit balance and an hourly ceiling, so you can resell access without writing auth code.</p><div class="price-grid"><div class="price"><h4>Self-host</h4><b>$0</b><p>Run unlimited surveys on your own infrastructure instead of a metered subscription.</p></div><div class="price"><h4>Agency hosting</h4><b>Your price</b><p>Host per merchant with their own webhook secrets and CSV exports.</p></div><div class="price"><h4>Shopify connector</h4><b>Add-on</b><p>The Shopify order-context embed is the natural paid extension, since it is the part not implemented here.</p></div></div><div class="callout"><b>Ship it publicly:</b> put the service behind Caddy or Nginx with TLS, point a subdomain at it, then hand clients <code>https://api.yourdomain.com/v2</code> and their own key.</div><h2 id="notes">Operational notes<a class="anchor-link" href="#notes">#</a></h2><div class="callout warn"><b>Read before going live.</b> These are the things that break in production.</div><ul><li>Zigpoll tier pricing is UNVERIFIED in the research snapshot, so no price ladder is claimed here.</li><li>No Shopify order context: the public id model is implemented, the Shopify embed is not.</li><li>The webhook receiver is a test endpoint. Wire your own consumer to validate signatures in production.</li></ul><h2 id="faq">FAQ<a class="anchor-link" href="#faq">#</a></h2><details><summary>Why is the public survey id separate from the admin credential?</summary><p>Because embedding an admin key in a storefront page would leak it to every visitor. The separation is the security property.</p></details><details><summary>Does it need a Zigpoll account?</summary><p>No. Everything runs locally.</p></details>
+    </article>
+  </div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>&copy; Gubbala Venu Gopal</span>
+    <span>Replicas &middot; self-hosted replacements</span>
+    <span class="sp"><a href="https://github.com/venugopal1902/replicas">Source on GitHub</a></span>
+  </div>
+</footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     VERSION: str = "0.1.0"
     DEBUG: bool = False
     HOST: str = "0.0.0.0"
-    PORT: int = 8600
+    PORT: int = 8640
 
     DATABASE_URL: str = f"sqlite+aiosqlite:///{BASE_DIR}/data/mail_engine.db"
     DATA_DIR: Path = BASE_DIR / "data"
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     SMTP_PASS: str = os.getenv("SMTP_PASS", "")
 
     # Public base URL used for tracking pixel / click / unsubscribe links.
-    PUBLIC_BASE_URL: str = os.getenv("MAIL_PUBLIC_BASE_URL", "http://localhost:8600")
+    PUBLIC_BASE_URL: str = os.getenv("MAIL_PUBLIC_BASE_URL", "http://localhost:8640")
     UNSUBSCRIBE_SECRET: str = os.getenv("MAIL_UNSUB_SECRET", "dev-unsubscribe-secret")
 
     class Config:

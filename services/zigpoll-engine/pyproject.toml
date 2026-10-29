@@ -1,0 +1,27 @@
+[project]
+name = "zigpoll-engine"
+version = "0.1.0"
+description = "Self-hosted survey, poll, response, and signed webhook engine"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn>=0.30.0",
+  "sqlalchemy>=2.0.32",
+  "aiosqlite>=0.20.0",
+  "greenlet>=3.0.0",
+  "pydantic>=2.8.0",
+  "pydantic-settings>=2.4.0",
+  "python-dotenv>=1.0.1",
+  "httpx>=0.27.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.3.0", "httpx>=0.27.0", "ruff>=0.6.0"]
+
+[tool.ruff.lint]
+ignore = ["B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
