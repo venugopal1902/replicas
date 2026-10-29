@@ -46,15 +46,42 @@ async function main() {
   await send("Page.navigate", { url: BASE });
   await new Promise(r => setTimeout(r, 2200));
 
+  const displayOf = async sel => ev(
+    `(() => { const el = document.querySelector(${JSON.stringify(sel)}); return el ? getComputedStyle(el).display : 'missing'; })()`);
+
   check("page loads", (await ev("document.title")) === "Lead Engine", String(await ev("document.title")));
-  check("login screen shown", await ev("!document.getElementById('login').hidden"));
+
+  const loginDisp = await displayOf("#login");
+  const appDisp = await displayOf("#app");
+  check("login screen visible and app hidden",
+    loginDisp !== "none" && appDisp === "none",
+    `login=${loginDisp} app=${appDisp}`);
   check("credentials prefilled", (await ev("document.getElementById('login-email').value")) === "admin@leadengine.local");
 
-  // Sign in
+  // Sign in (password is no longer prefilled, so type it like a user would)
+  await ev("document.getElementById('login-password').value = 'leadengine123'");
   await ev("document.getElementById('login-form').requestSubmit()");
   await new Promise(r => setTimeout(r, 3000));
 
-  check("app unlocks after login", await ev("!document.getElementById('app').hidden"));
+  const submitState = await ev(`JSON.stringify({
+    error: (document.getElementById('login-error')||{}).textContent || '',
+    token: !!localStorage.getItem('lead_token'),
+    appHidden: document.getElementById('app').hidden,
+    loginHidden: document.getElementById('login').hidden
+  })`);
+  if (process.env.DEBUG_LOGIN) console.log("submit state:", submitState);
+
+  const appDispAfter = await displayOf("#app");
+  const loginDispAfter = await displayOf("#login");
+  check("app unlocks and login is gone",
+    appDispAfter !== "none" && loginDispAfter === "none",
+    `app=${appDispAfter} login=${loginDispAfter}`);
+  // wait for the first view to finish its data fetch instead of a fixed sleep
+  for (let i = 0; i < 24; i++) {
+    const len = Number(await ev("document.getElementById('view').innerText.length")) || 0;
+    if (len > 100) break;
+    await new Promise(r => setTimeout(r, 500));
+  }
   const dash = await ev("document.getElementById('view').innerText");
   check("dashboard rendered", String(dash).length > 200, `${String(dash).length} chars`);
   check("credits widget populated", !String(await ev("document.getElementById('side-credits').textContent")).includes("--"),

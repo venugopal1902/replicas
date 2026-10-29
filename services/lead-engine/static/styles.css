@@ -54,6 +54,10 @@ button, input, select, textarea {
 }
 
 /* Login screen */
+/* A CSS display rule beats the HTML hidden attribute, which is how the login
+   screen and the app could render at the same time. Enforce it globally. */
+[hidden] { display: none !important; }
+
 .login-screen {
   min-height: 100vh;
   display: flex;

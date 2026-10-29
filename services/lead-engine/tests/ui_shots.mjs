@@ -34,6 +34,15 @@ async function main() {
   await ev("localStorage.clear()");
   await send("Page.navigate", { url: BASE });
   await new Promise(r => setTimeout(r, 2000));
+
+  // login screen, before signing in
+  const loginPng = (await send("Page.captureScreenshot", { format: "png" })).result?.data;
+  if (loginPng) {
+    writeFileSync(`${OUT}/ui-login.png`, Buffer.from(loginPng, "base64"));
+    console.log("saved ui-login.png", Buffer.from(loginPng, "base64").length, "bytes");
+  }
+
+  await ev("document.getElementById('login-password').value = 'leadengine123'");
   await ev("document.getElementById('login-form').requestSubmit()");
   await new Promise(r => setTimeout(r, 3000));
 

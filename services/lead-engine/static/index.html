@@ -17,12 +17,12 @@
       <label for="login-email">Email</label>
       <input id="login-email" name="email" type="email" autocomplete="username" value="admin@leadengine.local" required>
       <label for="login-password">Password</label>
-      <input id="login-password" name="password" type="password" autocomplete="current-password" value="leadengine123" required>
+      <input id="login-password" name="password" type="password" autocomplete="current-password" required>
       <button type="submit" class="btn primary" id="login-submit">Sign in</button>
-      <p class="hint">admin@leadengine.local / leadengine123</p>
+      <p class="hint">Email: admin@leadengine.local · password: the one you set at install</p>
       <p class="hint hint-small">
-        Cannot sign in? Reset the password from the service folder:<br>
-        <code>uv run python scripts/set_password.py --email admin@leadengine.local --password newpass123</code>
+        Forgot it? Reset from the service folder:<br>
+        <code>uv run python scripts/set_password.py --email admin@leadengine.local --password &lt;new-password&gt;</code>
       </p>
       <p class="hint hint-small" id="login-origin"></p>
       <p id="login-error" class="form-error" role="alert"></p>
