@@ -1,0 +1,12 @@
+[project]
+name = "back-in-stock"
+version = "0.1.0"
+description = "Self-hosted restock waitlist and notification engine (clean-room Back in Stock replica)"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn>=0.27",
+]
+
+[tool.uv]
+package = false
