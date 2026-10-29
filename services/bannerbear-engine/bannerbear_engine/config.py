@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = f"sqlite+aiosqlite:///{(BASE_DIR / 'data' / 'bannerbear.db').as_posix()}"
     DATA_DIR: Path = BASE_DIR / "data"
     ADMIN_EMAIL: str = "admin@bannerbear.local"
-    ADMIN_PASSWORD: str = Field(default="bannerbear123")
+    ADMIN_PASSWORD: str = Field(default="")
     ADMIN_NAME: str = "Bannerbear Admin"
     RENDER_CREDITS: int = 1
     DEMO_PROJECT_CREDITS: int = 100

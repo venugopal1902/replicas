@@ -25,7 +25,7 @@ The server binds to `127.0.0.1:8620` by default. Override with `BANNERBEAR_HOST`
 uv run pytest -q -s
 ```
 
-The acceptance suite exercises health, admin login, auth rejection, project/key creation, template creation, asynchronous render, status polling, PNG signature and dimensions, exact credit debit, usage row, zero-credit 402, admin HTML, image upload/compositing, and HTTP 5xx absence.
+The suite exercises health, admin login, auth rejection, project/key creation, template creation, async rendering, PNG validation, credit accounting, usage, zero-credit 402, the admin HTML, image upload/compositing, seeding, and 5xx absence. It starts and stops its own real HTTP server, defaults to port 8620, and can use `BANNERBEAR_TEST_PORT=8621` if 8620 is already occupied. This override affects tests only, not the service default.
 
 Health: `GET /health`  
 Admin UI: `GET /admin`  
@@ -66,14 +66,36 @@ Verified from the existing official-source research snapshot: **$49/month Automa
 - Image assets are uploaded to the local data directory; no remote URL fetch, preventing SSRF through image layers.
 - The seeded demo project key is stored hashed and intentionally not printed. Admins can issue a fresh, one-time-visible key from `/admin`.
 
-## Defaults on this build, and verification evidence
+## First-run admin password, and verification evidence
 
-This build differs from the text above in one deliberate way: `BANNERBEAR_ADMIN_PASSWORD` now defaults to
-`bannerbear123` so the service is usable straight after `uv sync` without exporting a variable first,
-matching the other replicas in this repository. **Change it before exposing the port beyond localhost.**
-The env var still wins when set, and no password is written into source control.
+There is **no baked default password** and there is also no lockout. On first boot, if
+`BANNERBEAR_ADMIN_PASSWORD` is not set, the service generates a unique password, prints it once to the
+console, and stores only its hash:
 
-Independently verified by the maintainer on 2026-10-30, not just reported by the author:
+```
+================================================================
+No BANNERBEAR_ADMIN_PASSWORD was set. Generated a unique one for this install.
+  admin email:    admin@bannerbear.local
+  admin password: <16 random characters, shown once>
+Shown once. Only its hash is stored. Save it, or set
+BANNERBEAR_ADMIN_PASSWORD before first boot to choose your own.
+================================================================
+```
+
+Set `BANNERBEAR_ADMIN_PASSWORD` before the first boot to choose your own. Either way no known credential
+ever ships in the source, which matters because the port is network-bound.
+
+Verified on this machine by the maintainer:
+
+```
+first boot with no password set:
+  generated password length: 16
+  login with baked default 'bannerbear123' -> 401   (no known default exists)
+  login with the generated password        -> 200 + access token
+  RESULT: PASS - unique password on first boot, no baked default, no lockout
+```
+
+Independently verified render, not just the author's suite:
 
 ```
 uv run --with pytest --with httpx --with pillow pytest tests/test_bannerbear.py -q

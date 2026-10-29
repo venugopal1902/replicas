@@ -19,11 +19,15 @@ DATA_DIR = ROOT / "data-test"
 DATA_DIR.mkdir(exist_ok=True)
 DB_PATH = DATA_DIR / f"test-{secrets.token_hex(6)}.db"
 ADMIN_PASSWORD = secrets.token_urlsafe(24)
+TEST_VERSION = "acceptance-" + secrets.token_hex(6)
+TEST_PORT = int(os.environ.get("BANNERBEAR_TEST_PORT", "8620"))
 
 os.environ["BANNERBEAR_DATABASE_URL"] = f"sqlite+aiosqlite:///{DB_PATH.as_posix()}"
 os.environ["BANNERBEAR_DATA_DIR"] = str(DATA_DIR)
 os.environ["BANNERBEAR_ADMIN_EMAIL"] = "admin@bannerbear.test"
 os.environ["BANNERBEAR_ADMIN_PASSWORD"] = ADMIN_PASSWORD
+os.environ["BANNERBEAR_VERSION"] = TEST_VERSION
+os.environ["BANNERBEAR_PORT"] = str(TEST_PORT)
 os.environ["BANNERBEAR_DEBUG"] = "false"
 
 
@@ -36,13 +40,23 @@ def state():
         [sys.executable, str(ROOT / "scripts" / "run_server.py")],
         cwd=ROOT, env=environment, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
-    client = httpx.Client(base_url="http://127.0.0.1:8620", timeout=15.0)
+    client = httpx.Client(base_url=f"http://127.0.0.1:{TEST_PORT}", timeout=15.0)
     deadline = time.monotonic() + 20
     while time.monotonic() < deadline:
         if process.poll() is not None:
             raise RuntimeError(f"Bannerbear server exited early with {process.returncode}")
         try:
-            if client.get("/health").status_code == 200:
+            response = client.get("/health")
+            if response.status_code == 200:
+                if response.json().get("version") != TEST_VERSION:
+                    process.terminate()
+                    process.wait(timeout=10)
+                    client.close()
+                    raise RuntimeError("Port 8620 answered with a different service; refusing to test it")
+                time.sleep(0.2)
+                if process.poll() is not None:
+                    client.close()
+                    raise RuntimeError("Bannerbear server exited after health probe")
                 break
         except httpx.HTTPError:
             time.sleep(0.1)
@@ -75,7 +89,8 @@ def passed(label: str) -> None:
 def test_01_health(state):
     response = request(state, "GET", "/health")
     assert response.status_code == 200 and response.json()["status"] == "online"
-    passed("health returns online")
+    assert response.json()["version"] == TEST_VERSION
+    passed("health returns online on the test-owned server")
 
 
 def test_02_admin_login_200(state):
