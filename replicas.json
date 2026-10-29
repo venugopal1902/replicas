@@ -22,138 +22,871 @@
       "language": "Python 3.12",
       "license": "MIT",
       "repo_path": "services/blotato-engine",
-      "stack": ["FastAPI", "SQLAlchemy 2", "APScheduler", "SQLite", "Pillow", "Uvicorn"],
-      "platforms": ["Instagram", "Facebook", "X", "LinkedIn", "YouTube", "Threads", "Bluesky", "Pinterest", "TikTok"],
+      "stack": [
+        "FastAPI",
+        "SQLAlchemy 2",
+        "APScheduler",
+        "SQLite",
+        "Pillow",
+        "Uvicorn"
+      ],
+      "platforms": [
+        "Instagram",
+        "Facebook",
+        "X",
+        "LinkedIn",
+        "YouTube",
+        "Threads",
+        "Bluesky",
+        "Pinterest",
+        "TikTok"
+      ],
       "summary": "Blotato sells a unified social media API and MCP server for $29/mo. This engine reproduces the whole surface — publishing, scheduling, comments, DMs, keyword automations, analytics, visual generation and source repurposing — across 38 REST endpoints and 17 MCP tools, plus a nine-screen web console. Same request shapes, same tool names, no per-seat billing and no post caps.",
-      "highlights": ["38 REST endpoints", "17 MCP tools", "Nine-screen web console", "Nine platform connectors", "Scheduling and weekly slots", "Keyword DM automations", "Six PNG templates", "Source extraction and repurposing"],
+      "highlights": [
+        "38 REST endpoints",
+        "17 MCP tools",
+        "Nine-screen web console",
+        "Nine platform connectors",
+        "Scheduling and weekly slots",
+        "Keyword DM automations",
+        "Six PNG templates",
+        "Source extraction and repurposing"
+      ],
       "features": [
-        {"title":"Publishing","body":"One POST /v2/posts targets any connected account. The connector registry resolves the platform adapter."},
-        {"title":"Scheduling","body":"ISO-8601 scheduling, background dispatcher and recurring weekly slots per account."},
-        {"title":"Comments and DMs","body":"Read comments, reply publicly, list DM threads and send messages."},
-        {"title":"Automations","body":"Keyword triggers, public reply variants, DMs, gates and webhooks."},
-        {"title":"Analytics","body":"Snapshots, aggregate totals, engagement rates and top-post rankings."},
-        {"title":"Visuals","body":"Six Pillow templates render quote cards, tweet cards, carousels and infographics."},
-        {"title":"Sources","body":"Extract from YouTube, articles, PDFs, X posts or text, then repurpose drafts."},
-        {"title":"Console","body":"Dashboard, composer, queue, inbox, automations, visuals, sources, analytics and settings."}
+        {
+          "title": "Publishing",
+          "body": "One POST /v2/posts targets any connected account. The connector registry resolves the platform adapter."
+        },
+        {
+          "title": "Scheduling",
+          "body": "ISO-8601 scheduling, background dispatcher and recurring weekly slots per account."
+        },
+        {
+          "title": "Comments and DMs",
+          "body": "Read comments, reply publicly, list DM threads and send messages."
+        },
+        {
+          "title": "Automations",
+          "body": "Keyword triggers, public reply variants, DMs, gates and webhooks."
+        },
+        {
+          "title": "Analytics",
+          "body": "Snapshots, aggregate totals, engagement rates and top-post rankings."
+        },
+        {
+          "title": "Visuals",
+          "body": "Six Pillow templates render quote cards, tweet cards, carousels and infographics."
+        },
+        {
+          "title": "Sources",
+          "body": "Extract from YouTube, articles, PDFs, X posts or text, then repurpose drafts."
+        },
+        {
+          "title": "Console",
+          "body": "Dashboard, composer, queue, inbox, automations, visuals, sources, analytics and settings."
+        }
       ],
-      "ui":{"intro":"Console at /, served by the API process.","images":[
-        {"src":"assets/ui/ui-dashboard.png","caption":"Dashboard"},
-        {"src":"assets/ui/ui-compose.png","caption":"Compose"},
-        {"src":"assets/ui/ui-inbox.png","caption":"Inbox"},
-        {"src":"assets/ui/ui-visuals.png","caption":"Visuals"},
-        {"src":"assets/ui/ui-analytics.png","caption":"Analytics"}
-      ]},
-      "prereqs":["Python 3.12","uv","Git"],
-      "install":[
-        {"title":"Clone","desc":"Get the source.","lang":"bash","code":"git clone https://github.com/venugopal1902/replicas.git\ncd replicas/services/blotato-engine"},
-        {"title":"Install","desc":"Create environment.","lang":"bash","code":"uv sync --python 3.12"},
-        {"title":"Test","desc":"Run suite.","lang":"bash","code":"uv run python tests/test_engine.py"},
-        {"title":"Run","desc":"Start service on port 8400.","lang":"bash","code":"uv run python scripts/run_server.py"},
-        {"title":"Open UI","desc":"Master key: blt_master_venu_secret_2026","lang":"text","code":"http://localhost:8400"}
+      "ui": {
+        "intro": "Console at /, served by the API process.",
+        "images": [
+          {
+            "src": "assets/ui/ui-dashboard.png",
+            "caption": "Dashboard"
+          },
+          {
+            "src": "assets/ui/ui-compose.png",
+            "caption": "Compose"
+          },
+          {
+            "src": "assets/ui/ui-inbox.png",
+            "caption": "Inbox"
+          },
+          {
+            "src": "assets/ui/ui-visuals.png",
+            "caption": "Visuals"
+          },
+          {
+            "src": "assets/ui/ui-analytics.png",
+            "caption": "Analytics"
+          }
+        ]
+      },
+      "prereqs": [
+        "Python 3.12",
+        "uv",
+        "Git"
       ],
-      "verify":{"title":"Health check","code":"curl http://localhost:8400/health"},
-      "urls":[{"label":"UI","value":"http://localhost:8400/"},{"label":"REST","value":"http://localhost:8400/v2"},{"label":"MCP","value":"http://localhost:8400/mcp"},{"label":"Swagger","value":"http://localhost:8400/docs"}],
-      "usage":[
-        {"title":"List accounts","desc":"Fetch IDs first.","lang":"bash","code":"curl -s http://localhost:8400/v2/users/me/accounts -H \"blotato-api-key: $BLOTATO_KEY\""},
-        {"title":"Publish","desc":"Media URLs must be public.","lang":"bash","code":"curl -X POST http://localhost:8400/v2/posts -H \"blotato-api-key: $BLOTATO_KEY\" -H \"Content-Type: application/json\" -d '{\"post\":{\"accountId\":\"<ID>\",\"content\":{\"text\":\"Hello\"}}}'"},
-        {"title":"MCP","desc":"Connect an agent.","lang":"json","code":"{\"mcpServers\":{\"blotato\":{\"url\":\"http://localhost:8400/mcp\",\"headers\":{\"blotato-api-key\":\"<KEY>\"}}}}"}
+      "install": [
+        {
+          "title": "Clone",
+          "desc": "Get the source.",
+          "lang": "bash",
+          "code": "git clone https://github.com/venugopal1902/replicas.git\ncd replicas/services/blotato-engine"
+        },
+        {
+          "title": "Install",
+          "desc": "Create environment.",
+          "lang": "bash",
+          "code": "uv sync --python 3.12"
+        },
+        {
+          "title": "Test",
+          "desc": "Run suite.",
+          "lang": "bash",
+          "code": "uv run python tests/test_engine.py"
+        },
+        {
+          "title": "Run",
+          "desc": "Start service on port 8400.",
+          "lang": "bash",
+          "code": "uv run python scripts/run_server.py"
+        },
+        {
+          "title": "Open UI",
+          "desc": "Master key: blt_master_venu_secret_2026",
+          "lang": "text",
+          "code": "http://localhost:8400"
+        }
       ],
-      "endpoints":[{"method":"GET","path":"/health","desc":"Health"},{"method":"GET","path":"/v2/users/me/accounts","desc":"Accounts"},{"method":"POST","path":"/v2/posts","desc":"Publish"},{"method":"GET","path":"/v2/schedules","desc":"Queue"},{"method":"POST","path":"/v2/media/upload","desc":"Media"},{"method":"GET","path":"/v2/comments","desc":"Comments"},{"method":"GET","path":"/v2/messages","desc":"Messages"},{"method":"GET","path":"/v2/dm-automations","desc":"Automations"},{"method":"GET","path":"/v2/analytics","desc":"Analytics"},{"method":"POST","path":"/v2/videos/from-templates","desc":"Visuals"},{"method":"POST","path":"/v2/source-resolutions","desc":"Sources"},{"method":"POST","path":"/mcp","desc":"MCP"}],
-      "mcp_tools":[{"name":"blotato_list_accounts","desc":"List accounts"},{"name":"blotato_publish_post","desc":"Publish"},{"name":"blotato_get_post_status","desc":"Status"},{"name":"blotato_list_schedules","desc":"Schedules"},{"name":"blotato_next_free_slot","desc":"Next slot"},{"name":"blotato_get_analytics","desc":"Analytics"},{"name":"blotato_top_posts","desc":"Top posts"},{"name":"blotato_list_comments","desc":"Comments"},{"name":"blotato_reply_to_comment","desc":"Reply"},{"name":"blotato_list_threads","desc":"Threads"},{"name":"blotato_get_thread","desc":"Read thread"},{"name":"blotato_send_message","desc":"Send DM"},{"name":"blotato_list_automations","desc":"List automations"},{"name":"blotato_run_automation","desc":"Test automation"},{"name":"blotato_list_templates","desc":"List templates"},{"name":"blotato_create_visual","desc":"Create visual"},{"name":"blotato_check_credits","desc":"Credits"}],
-      "monetization":[{"tier":"Personal","price":"$0","detail":"Local admin use."},{"tier":"Starter","price":"$19/mo","detail":"1,000 credits."},{"tier":"Pro","price":"$49/mo","detail":"5,000 credits."},{"tier":"Agency","price":"$99/mo","detail":"Unlimited."}],
-      "notes":["Real credentials rejected by a platform fail honestly; only provider=mock accounts simulate.","Live posting needs approved platform apps and valid tokens.","Use TLS and change the master key before public exposure."],
-      "faq":[{"q":"Is this affiliated with Blotato?","a":"No. Independent clean-room implementation."},{"q":"Does mock publish live?","a":"No. Demo posts carry simulated=true."}]
+      "verify": {
+        "title": "Health check",
+        "code": "curl http://localhost:8400/health"
+      },
+      "urls": [
+        {
+          "label": "UI",
+          "value": "http://localhost:8400/"
+        },
+        {
+          "label": "REST",
+          "value": "http://localhost:8400/v2"
+        },
+        {
+          "label": "MCP",
+          "value": "http://localhost:8400/mcp"
+        },
+        {
+          "label": "Swagger",
+          "value": "http://localhost:8400/docs"
+        }
+      ],
+      "usage": [
+        {
+          "title": "List accounts",
+          "desc": "Fetch IDs first.",
+          "lang": "bash",
+          "code": "curl -s http://localhost:8400/v2/users/me/accounts -H \"blotato-api-key: $BLOTATO_KEY\""
+        },
+        {
+          "title": "Publish",
+          "desc": "Media URLs must be public.",
+          "lang": "bash",
+          "code": "curl -X POST http://localhost:8400/v2/posts -H \"blotato-api-key: $BLOTATO_KEY\" -H \"Content-Type: application/json\" -d '{\"post\":{\"accountId\":\"<ID>\",\"content\":{\"text\":\"Hello\"}}}'"
+        },
+        {
+          "title": "MCP",
+          "desc": "Connect an agent.",
+          "lang": "json",
+          "code": "{\"mcpServers\":{\"blotato\":{\"url\":\"http://localhost:8400/mcp\",\"headers\":{\"blotato-api-key\":\"<KEY>\"}}}}"
+        }
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/health",
+          "desc": "Health"
+        },
+        {
+          "method": "GET",
+          "path": "/v2/users/me/accounts",
+          "desc": "Accounts"
+        },
+        {
+          "method": "POST",
+          "path": "/v2/posts",
+          "desc": "Publish"
+        },
+        {
+          "method": "GET",
+          "path": "/v2/schedules",
+          "desc": "Queue"
+        },
+        {
+          "method": "POST",
+          "path": "/v2/media/upload",
+          "desc": "Media"
+        },
+        {
+          "method": "GET",
+          "path": "/v2/comments",
+          "desc": "Comments"
+        },
+        {
+          "method": "GET",
+          "path": "/v2/messages",
+          "desc": "Messages"
+        },
+        {
+          "method": "GET",
+          "path": "/v2/dm-automations",
+          "desc": "Automations"
+        },
+        {
+          "method": "GET",
+          "path": "/v2/analytics",
+          "desc": "Analytics"
+        },
+        {
+          "method": "POST",
+          "path": "/v2/videos/from-templates",
+          "desc": "Visuals"
+        },
+        {
+          "method": "POST",
+          "path": "/v2/source-resolutions",
+          "desc": "Sources"
+        },
+        {
+          "method": "POST",
+          "path": "/mcp",
+          "desc": "MCP"
+        }
+      ],
+      "mcp_tools": [
+        {
+          "name": "blotato_list_accounts",
+          "desc": "List accounts"
+        },
+        {
+          "name": "blotato_publish_post",
+          "desc": "Publish"
+        },
+        {
+          "name": "blotato_get_post_status",
+          "desc": "Status"
+        },
+        {
+          "name": "blotato_list_schedules",
+          "desc": "Schedules"
+        },
+        {
+          "name": "blotato_next_free_slot",
+          "desc": "Next slot"
+        },
+        {
+          "name": "blotato_get_analytics",
+          "desc": "Analytics"
+        },
+        {
+          "name": "blotato_top_posts",
+          "desc": "Top posts"
+        },
+        {
+          "name": "blotato_list_comments",
+          "desc": "Comments"
+        },
+        {
+          "name": "blotato_reply_to_comment",
+          "desc": "Reply"
+        },
+        {
+          "name": "blotato_list_threads",
+          "desc": "Threads"
+        },
+        {
+          "name": "blotato_get_thread",
+          "desc": "Read thread"
+        },
+        {
+          "name": "blotato_send_message",
+          "desc": "Send DM"
+        },
+        {
+          "name": "blotato_list_automations",
+          "desc": "List automations"
+        },
+        {
+          "name": "blotato_run_automation",
+          "desc": "Test automation"
+        },
+        {
+          "name": "blotato_list_templates",
+          "desc": "List templates"
+        },
+        {
+          "name": "blotato_create_visual",
+          "desc": "Create visual"
+        },
+        {
+          "name": "blotato_check_credits",
+          "desc": "Credits"
+        }
+      ],
+      "monetization": [
+        {
+          "tier": "Personal",
+          "price": "$0",
+          "detail": "Local admin use."
+        },
+        {
+          "tier": "Starter",
+          "price": "$19/mo",
+          "detail": "1,000 credits."
+        },
+        {
+          "tier": "Pro",
+          "price": "$49/mo",
+          "detail": "5,000 credits."
+        },
+        {
+          "tier": "Agency",
+          "price": "$99/mo",
+          "detail": "Unlimited."
+        }
+      ],
+      "notes": [
+        "Real credentials rejected by a platform fail honestly; only provider=mock accounts simulate.",
+        "Live posting needs approved platform apps and valid tokens.",
+        "Use TLS and change the master key before public exposure."
+      ],
+      "faq": [
+        {
+          "q": "Is this affiliated with Blotato?",
+          "a": "No. Independent clean-room implementation."
+        },
+        {
+          "q": "Does mock publish live?",
+          "a": "No. Demo posts carry simulated=true."
+        }
+      ]
     },
     {
-      "slug":"lead-engine",
-      "name":"Lead Engine",
-      "replaces":"SalesQL",
-      "replaces_url":"https://www.salesql.com/",
-      "tagline":"Prospect search and contact enrichment: work emails, provider-sourced personal emails and phone numbers.",
-      "status":"beta",
-      "version":"0.1.0",
-      "language":"Python 3.12",
-      "license":"MIT",
-      "repo_path":"services/lead-engine",
-      "stack":["FastAPI","SQLAlchemy 2","SQLite","APScheduler","dnspython","vanilla JS"],
-      "platforms":["LinkedIn","Hunter","Apollo","People Data Labs","DNS/MX"],
-      "summary":"Self-hosted prospecting and enrichment workspace inspired by SalesQL. Search by role, company, industry, location and headcount; reveal work email for one credit only when found; process LinkedIn URL and CSV enrichment jobs; verify emails; organize folders; run simulated campaigns with open/click tracking; connect AI agents using MCP. Real provider-backed details require your own API keys. Without one, the system can generate a work-email candidate from a public company domain and check MX, but never invents a personal email or phone.",
-      "highlights":["Prospector filters and natural-language filter parsing; searches cost 0 credits","One credit per successful email reveal; no result means no charge","Work email candidates use ranked patterns and MX checks","Direct email and phone are returned only by configured providers","LinkedIn URL and CSV enrichment jobs, folders and verifier","Campaign sequences and tracking; send simulation by default","Six MCP tools and a nine-screen UI"],
-      "features":[
-        {"title":"Prospector","body":"Filter by title, company, industry, location, seniority and headcount. Searching never uses credits."},
-        {"title":"Contact reveal","body":"Reveals work email confidence/status. One credit only when an email is found. Unavailable data is not fabricated."},
-        {"title":"LinkedIn URL enrichment","body":"Parse profile URLs and enrich via configured Hunter, Apollo or PDL providers. Does not scrape LinkedIn or bypass sign-in/anti-bot controls."},
-        {"title":"Bulk CSV enrichment","body":"Upload LinkedIn URLs, names/company, or email addresses. Poll jobs and download enriched CSV."},
-        {"title":"Email verifier","body":"Syntax, role account, MX and optional SMTP checks. SMTP probe is off by default."},
-        {"title":"Folders and campaigns","body":"Save contacts in lists. Build sequences and track opens/clicks. Sends are simulated unless SMTP is explicitly configured."},
-        {"title":"MCP and API","body":"Search, reveal, enrich, verify, folders and credits via MCP/API."}
+      "slug": "lead-engine",
+      "name": "Lead Engine",
+      "replaces": "SalesQL",
+      "replaces_url": "https://www.salesql.com/",
+      "tagline": "Prospect search and contact enrichment: work emails, provider-sourced personal emails and phone numbers.",
+      "status": "beta",
+      "version": "0.1.0",
+      "language": "Python 3.12",
+      "license": "MIT",
+      "repo_path": "services/lead-engine",
+      "stack": [
+        "FastAPI",
+        "SQLAlchemy 2",
+        "SQLite",
+        "APScheduler",
+        "dnspython",
+        "vanilla JS"
       ],
-      "ui":{"intro":"Local workspace UI: prospect search, enrichment, lists, verifier, campaigns and API/MCP settings.","images":[
-        {"src":"assets/ui/lead-engine/ui-dashboard.png","caption":"Dashboard"},
-        {"src":"assets/ui/lead-engine/ui-prospector.png","caption":"Prospector"},
-        {"src":"assets/ui/lead-engine/ui-enrich.png","caption":"Enrichment jobs"},
-        {"src":"assets/ui/lead-engine/ui-verifier.png","caption":"Email verifier"},
-        {"src":"assets/ui/lead-engine/ui-campaigns.png","caption":"Campaigns"},
-        {"src":"assets/ui/lead-engine/ui-api.png","caption":"API and MCP"}
-      ]},
-      "prereqs":["Python 3.12","uv","Git"],
-      "install":[
-        {"title":"Clone","desc":"Get the service source.","lang":"bash","code":"git clone https://github.com/venugopal1902/replicas.git\ncd replicas/services/lead-engine"},
-        {"title":"Install","desc":"Create environment.","lang":"bash","code":"uv sync --python 3.12"},
-        {"title":"Run enrichment tests","desc":"Uses real DNS. Provider APIs optional.","lang":"bash","code":"uv run python tests/test_enrichment.py"},
-        {"title":"Start server","desc":"Local server on port 8500.","lang":"bash","code":"uv run python scripts/run_server.py"},
-        {"title":"Open app","desc":"Development credentials; change before exposing.","lang":"text","code":"http://localhost:8500\n\nadmin@leadengine.local / leadengine123"}
+      "platforms": [
+        "LinkedIn",
+        "Hunter",
+        "Apollo",
+        "People Data Labs",
+        "DNS/MX"
       ],
-      "verify":{"title":"Health check","code":"curl http://localhost:8500/health"},
-      "urls":[{"label":"Web UI","value":"http://localhost:8500/"},{"label":"API docs","value":"http://localhost:8500/docs"},{"label":"MCP","value":"http://localhost:8500/mcp"}],
-      "usage":[
-        {"title":"Search prospects","desc":"No credits are spent on search.","lang":"bash","code":"curl -X POST http://localhost:8500/api/search -H \"Authorization: Bearer $TOKEN\" -H \"Content-Type: application/json\" -d '{\"filters\":{\"title\":\"Head of Talent\",\"industry\":\"Fintech\",\"location\":\"London\"},\"pageSize\":20}'"},
-        {"title":"Submit LinkedIn URL enrichment","desc":"Real contact data requires a provider API key. LinkedIn scraping is not performed.","lang":"bash","code":"curl -X POST http://localhost:8500/api/enrich/linkedin -H \"Authorization: Bearer $TOKEN\" -H \"Content-Type: application/json\" -d '{\"urls\":[\"https://www.linkedin.com/in/example-person\"],\"companyHint\":\"Example Inc\"}'"},
-        {"title":"Verify email","desc":"Uses a separate verifier-credit pool.","lang":"bash","code":"curl -X POST http://localhost:8500/api/verify -H \"Authorization: Bearer $TOKEN\" -H \"Content-Type: application/json\" -d '{\"emails\":[\"person@example.com\"]}'"},
-        {"title":"MCP setup","desc":"Local AI-client configuration.","lang":"json","code":"{\"mcpServers\":{\"lead-engine\":{\"url\":\"http://localhost:8500/mcp\",\"headers\":{\"Authorization\":\"Bearer <TOKEN>\"}}}}"}
+      "summary": "Self-hosted prospecting and enrichment workspace inspired by SalesQL. Search by role, company, industry, location and headcount; reveal work email for one credit only when found; process LinkedIn URL and CSV enrichment jobs; verify emails; organize folders; run simulated campaigns with open/click tracking; connect AI agents using MCP. Real provider-backed details require your own API keys. Without one, the system can generate a work-email candidate from a public company domain and check MX, but never invents a personal email or phone.",
+      "highlights": [
+        "Prospector filters and natural-language filter parsing; searches cost 0 credits",
+        "One credit per successful email reveal; no result means no charge",
+        "Work email candidates use ranked patterns and MX checks",
+        "Direct email and phone are returned only by configured providers",
+        "LinkedIn URL and CSV enrichment jobs, folders and verifier",
+        "Campaign sequences and tracking; send simulation by default",
+        "Six MCP tools and a nine-screen UI"
       ],
-      "endpoints":[
-        {"method":"POST","path":"/api/auth/login","desc":"Create browser session"},
-        {"method":"GET","path":"/api/auth/me","desc":"Current workspace"},
-        {"method":"GET","path":"/api/workspace","desc":"Plan, credits and quotas"},
-        {"method":"POST","path":"/api/search","desc":"Search without credit charges"},
-        {"method":"POST","path":"/api/contacts/{id}/reveal","desc":"Reveal and conditionally charge one credit"},
-        {"method":"POST","path":"/api/enrich/linkedin","desc":"Queue LinkedIn URL enrichment"},
-        {"method":"POST","path":"/api/csv/enrich","desc":"Queue CSV enrichment"},
-        {"method":"GET","path":"/api/jobs/{id}","desc":"Poll job progress"},
-        {"method":"POST","path":"/api/verify","desc":"Verify email addresses"},
-        {"method":"GET","path":"/api/campaigns","desc":"List campaigns"},
-        {"method":"POST","path":"/api/campaigns/{id}/send","desc":"Simulated send; no email by default"},
-        {"method":"GET","path":"/api/api-keys","desc":"Machine keys"},
-        {"method":"POST","path":"/mcp","desc":"MCP JSON-RPC"}
+      "features": [
+        {
+          "title": "Prospector",
+          "body": "Filter by title, company, industry, location, seniority and headcount. Searching never uses credits."
+        },
+        {
+          "title": "Contact reveal",
+          "body": "Reveals work email confidence/status. One credit only when an email is found. Unavailable data is not fabricated."
+        },
+        {
+          "title": "LinkedIn URL enrichment",
+          "body": "Parse profile URLs and enrich via configured Hunter, Apollo or PDL providers. Does not scrape LinkedIn or bypass sign-in/anti-bot controls."
+        },
+        {
+          "title": "Bulk CSV enrichment",
+          "body": "Upload LinkedIn URLs, names/company, or email addresses. Poll jobs and download enriched CSV."
+        },
+        {
+          "title": "Email verifier",
+          "body": "Syntax, role account, MX and optional SMTP checks. SMTP probe is off by default."
+        },
+        {
+          "title": "Folders and campaigns",
+          "body": "Save contacts in lists. Build sequences and track opens/clicks. Sends are simulated unless SMTP is explicitly configured."
+        },
+        {
+          "title": "MCP and API",
+          "body": "Search, reveal, enrich, verify, folders and credits via MCP/API."
+        }
       ],
-      "mcp_tools":[
-        {"name":"search_prospects","desc":"Free contact search"},
-        {"name":"reveal_contact","desc":"Reveal one record"},
-        {"name":"enrich_linkedin","desc":"Provider-backed URL enrichment"},
-        {"name":"verify_email","desc":"Syntax, role and MX checks"},
-        {"name":"list_folders","desc":"List saved contacts"},
-        {"name":"check_credits","desc":"Show reveal/verifier quotas"}
+      "ui": {
+        "intro": "Local workspace UI: prospect search, enrichment, lists, verifier, campaigns and API/MCP settings.",
+        "images": [
+          {
+            "src": "assets/ui/lead-engine/ui-dashboard.png",
+            "caption": "Dashboard"
+          },
+          {
+            "src": "assets/ui/lead-engine/ui-prospector.png",
+            "caption": "Prospector"
+          },
+          {
+            "src": "assets/ui/lead-engine/ui-enrich.png",
+            "caption": "Enrichment jobs"
+          },
+          {
+            "src": "assets/ui/lead-engine/ui-verifier.png",
+            "caption": "Email verifier"
+          },
+          {
+            "src": "assets/ui/lead-engine/ui-campaigns.png",
+            "caption": "Campaigns"
+          },
+          {
+            "src": "assets/ui/lead-engine/ui-api.png",
+            "caption": "API and MCP"
+          }
+        ]
+      },
+      "prereqs": [
+        "Python 3.12",
+        "uv",
+        "Git"
       ],
-      "monetization":[
-        {"tier":"Free","price":"$0/mo","detail":"50 monthly reveal credits, 1 seat, 100 campaign recipients."},
-        {"tier":"Basic","price":"$39/mo","detail":"2,000 credits and CSV enrichment up to 1,000 rows."},
-        {"tier":"Professional","price":"$79/mo","detail":"5,000 credits, 3 seats and API access."},
-        {"tier":"Premium","price":"$119/mo","detail":"12,000 credits, 5 seats and larger quotas."}
+      "install": [
+        {
+          "title": "Clone",
+          "desc": "Get the service source.",
+          "lang": "bash",
+          "code": "git clone https://github.com/venugopal1902/replicas.git\ncd replicas/services/lead-engine"
+        },
+        {
+          "title": "Install",
+          "desc": "Create environment.",
+          "lang": "bash",
+          "code": "uv sync --python 3.12"
+        },
+        {
+          "title": "Run enrichment tests",
+          "desc": "Uses real DNS. Provider APIs optional.",
+          "lang": "bash",
+          "code": "uv run python tests/test_enrichment.py"
+        },
+        {
+          "title": "Start server",
+          "desc": "Local server on port 8500.",
+          "lang": "bash",
+          "code": "uv run python scripts/run_server.py"
+        },
+        {
+          "title": "Open app",
+          "desc": "Development credentials; change before exposing.",
+          "lang": "text",
+          "code": "http://localhost:8500\n\nadmin@leadengine.local / leadengine123"
+        }
       ],
-      "notes":[
+      "verify": {
+        "title": "Health check",
+        "code": "curl http://localhost:8500/health"
+      },
+      "urls": [
+        {
+          "label": "Web UI",
+          "value": "http://localhost:8500/"
+        },
+        {
+          "label": "API docs",
+          "value": "http://localhost:8500/docs"
+        },
+        {
+          "label": "MCP",
+          "value": "http://localhost:8500/mcp"
+        }
+      ],
+      "usage": [
+        {
+          "title": "Search prospects",
+          "desc": "No credits are spent on search.",
+          "lang": "bash",
+          "code": "curl -X POST http://localhost:8500/api/search -H \"Authorization: Bearer $TOKEN\" -H \"Content-Type: application/json\" -d '{\"filters\":{\"title\":\"Head of Talent\",\"industry\":\"Fintech\",\"location\":\"London\"},\"pageSize\":20}'"
+        },
+        {
+          "title": "Submit LinkedIn URL enrichment",
+          "desc": "Real contact data requires a provider API key. LinkedIn scraping is not performed.",
+          "lang": "bash",
+          "code": "curl -X POST http://localhost:8500/api/enrich/linkedin -H \"Authorization: Bearer $TOKEN\" -H \"Content-Type: application/json\" -d '{\"urls\":[\"https://www.linkedin.com/in/example-person\"],\"companyHint\":\"Example Inc\"}'"
+        },
+        {
+          "title": "Verify email",
+          "desc": "Uses a separate verifier-credit pool.",
+          "lang": "bash",
+          "code": "curl -X POST http://localhost:8500/api/verify -H \"Authorization: Bearer $TOKEN\" -H \"Content-Type: application/json\" -d '{\"emails\":[\"person@example.com\"]}'"
+        },
+        {
+          "title": "MCP setup",
+          "desc": "Local AI-client configuration.",
+          "lang": "json",
+          "code": "{\"mcpServers\":{\"lead-engine\":{\"url\":\"http://localhost:8500/mcp\",\"headers\":{\"Authorization\":\"Bearer <TOKEN>\"}}}}"
+        }
+      ],
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/api/auth/login",
+          "desc": "Create browser session"
+        },
+        {
+          "method": "GET",
+          "path": "/api/auth/me",
+          "desc": "Current workspace"
+        },
+        {
+          "method": "GET",
+          "path": "/api/workspace",
+          "desc": "Plan, credits and quotas"
+        },
+        {
+          "method": "POST",
+          "path": "/api/search",
+          "desc": "Search without credit charges"
+        },
+        {
+          "method": "POST",
+          "path": "/api/contacts/{id}/reveal",
+          "desc": "Reveal and conditionally charge one credit"
+        },
+        {
+          "method": "POST",
+          "path": "/api/enrich/linkedin",
+          "desc": "Queue LinkedIn URL enrichment"
+        },
+        {
+          "method": "POST",
+          "path": "/api/csv/enrich",
+          "desc": "Queue CSV enrichment"
+        },
+        {
+          "method": "GET",
+          "path": "/api/jobs/{id}",
+          "desc": "Poll job progress"
+        },
+        {
+          "method": "POST",
+          "path": "/api/verify",
+          "desc": "Verify email addresses"
+        },
+        {
+          "method": "GET",
+          "path": "/api/campaigns",
+          "desc": "List campaigns"
+        },
+        {
+          "method": "POST",
+          "path": "/api/campaigns/{id}/send",
+          "desc": "Simulated send; no email by default"
+        },
+        {
+          "method": "GET",
+          "path": "/api/api-keys",
+          "desc": "Machine keys"
+        },
+        {
+          "method": "POST",
+          "path": "/mcp",
+          "desc": "MCP JSON-RPC"
+        }
+      ],
+      "mcp_tools": [
+        {
+          "name": "search_prospects",
+          "desc": "Free contact search"
+        },
+        {
+          "name": "reveal_contact",
+          "desc": "Reveal one record"
+        },
+        {
+          "name": "enrich_linkedin",
+          "desc": "Provider-backed URL enrichment"
+        },
+        {
+          "name": "verify_email",
+          "desc": "Syntax, role and MX checks"
+        },
+        {
+          "name": "list_folders",
+          "desc": "List saved contacts"
+        },
+        {
+          "name": "check_credits",
+          "desc": "Show reveal/verifier quotas"
+        }
+      ],
+      "monetization": [
+        {
+          "tier": "Free",
+          "price": "$0/mo",
+          "detail": "50 monthly reveal credits, 1 seat, 100 campaign recipients."
+        },
+        {
+          "tier": "Basic",
+          "price": "$39/mo",
+          "detail": "2,000 credits and CSV enrichment up to 1,000 rows."
+        },
+        {
+          "tier": "Professional",
+          "price": "$79/mo",
+          "detail": "5,000 credits, 3 seats and API access."
+        },
+        {
+          "tier": "Premium",
+          "price": "$119/mo",
+          "detail": "12,000 credits, 5 seats and larger quotas."
+        }
+      ],
+      "notes": [
         "This is an independent clean-room tool. It does not scrape LinkedIn or bypass login/rate limits. Enrich from user-supplied URLs through licensed APIs and domain-based work-email checks.",
         "Without HUNTER_API_KEY, APOLLO_API_KEY or PDL_API_KEY, results are limited to generated work-email candidates and MX checks. No personal email or phone is invented.",
         "Seeded sample contacts are fictional demo records, not real people.",
         "SMTP probing is off by default. Campaign sends are simulated by default; configure SMTP only with consent and a lawful basis.",
         "Development login: admin@leadengine.local / leadengine123. Change it before deployment and never expose the dev server publicly."
       ],
-      "faq":[
-        {"q":"Can it get email and phone from a LinkedIn link?","a":"It parses profile URLs and enriches through configured Hunter, Apollo or PDL APIs. Without provider keys it can generate work-email candidates from name/domain and check MX. It never scrapes LinkedIn or invents a direct email/phone."},
-        {"q":"Are the sample contacts real?","a":"No. Seed records are fictional demo data."},
-        {"q":"Will campaigns email people?","a":"No by default. Sends are simulated. SMTP is an explicit opt-in."},
-        {"q":"Do searches cost credits?","a":"No. Only a reveal that returns at least one email costs one credit."}
+      "faq": [
+        {
+          "q": "Can it get email and phone from a LinkedIn link?",
+          "a": "It parses profile URLs and enriches through configured Hunter, Apollo or PDL APIs. Without provider keys it can generate work-email candidates from name/domain and check MX. It never scrapes LinkedIn or invents a direct email/phone."
+        },
+        {
+          "q": "Are the sample contacts real?",
+          "a": "No. Seed records are fictional demo data."
+        },
+        {
+          "q": "Will campaigns email people?",
+          "a": "No by default. Sends are simulated. SMTP is an explicit opt-in."
+        },
+        {
+          "q": "Do searches cost credits?",
+          "a": "No. Only a reveal that returns at least one email costs one credit."
+        }
       ]
+    },
+    {
+      "slug": "back-in-stock",
+      "name": "Back in Stock",
+      "replaces": "Back in Stock by Amp",
+      "replaces_url": "https://backinstock.org/pricing",
+      "tagline": "Restock waitlists that actually notify people. Self-hosted, no $19-99/mo per store.",
+      "status": "stable",
+      "version": "0.1.0",
+      "language": "Python 3.12",
+      "license": "MIT",
+      "repo_path": "services/back-in-stock",
+      "stack": [
+        "FastAPI",
+        "SQLite",
+        "Uvicorn",
+        "Vanilla JS console"
+      ],
+      "platforms": [],
+      "summary": "Back in Stock by Amp charges Shopify merchants $19 to $99 a month to collect restock waitlists and email shoppers when a sold-out variant returns. This engine reproduces the core loop: per-variant waitlist signup, a restock trigger that queues one notification per waiter, preorder capture, admin stats and per-variant CSV export, plus a storefront demo and admin console. Notifications are recorded as dry_run by default and are never labelled sent unless SMTP was actually configured.",
+      "highlights": [
+        "20/20 checks passing against a live server",
+        "Per-variant waitlists, no shopper account needed",
+        "Restock trigger queues one notification per waiter",
+        "Preorder capture on sold-out variants",
+        "Admin console and storefront demo",
+        "Per-variant CSV export",
+        "Dry-run by default, never fakes a delivery"
+      ],
+      "features": [
+        {
+          "title": "Waitlists",
+          "body": "Shoppers subscribe to one sold-out variant with an email. Duplicate signups are reported instead of duplicated."
+        },
+        {
+          "title": "Restock trigger",
+          "body": "Setting stock from 0 to positive queues a notification row for every waiting subscriber and flips them to notified."
+        },
+        {
+          "title": "Preorders",
+          "body": "Capture intent on sold-out variants with quantity, independent of the waitlist."
+        },
+        {
+          "title": "Admin",
+          "body": "Stats, variant list with waiting counts, notification log, and CSV export per variant."
+        },
+        {
+          "title": "Honest sends",
+          "body": "SEND_MODE=dry_run records notifications without transmitting. Nothing is reported as delivered."
+        }
+      ],
+      "prereqs": [
+        "Python 3.11 or newer",
+        "uv (Astral)",
+        "No Shopify account needed for the demo"
+      ],
+      "install": [
+        {
+          "title": "Clone",
+          "desc": "Get the source.",
+          "lang": "bash",
+          "code": "git clone https://github.com/venugopal1902/replicas.git\ncd replicas/services/back-in-stock"
+        },
+        {
+          "title": "Install",
+          "desc": "Create the environment and install FastAPI.",
+          "lang": "bash",
+          "code": "uv sync"
+        },
+        {
+          "title": "Run",
+          "desc": "Start the storefront and admin console on port 8600.",
+          "lang": "bash",
+          "code": "uv run python scripts/run_server.py"
+        }
+      ],
+      "urls": [
+        {
+          "label": "Storefront demo",
+          "value": "http://127.0.0.1:8600/"
+        },
+        {
+          "label": "Admin console",
+          "value": "http://127.0.0.1:8600/admin"
+        },
+        {
+          "label": "Health",
+          "value": "http://127.0.0.1:8600/health"
+        },
+        {
+          "label": "OpenAPI docs",
+          "value": "http://127.0.0.1:8600/docs"
+        }
+      ],
+      "usage": [
+        {
+          "title": "Join a waitlist",
+          "desc": "A sold-out variant accepts an email with no auth. A duplicate signup returns duplicate:true instead of creating a second row.",
+          "code": "curl -s -X POST http://127.0.0.1:8600/api/public/waitlist \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"variant_id\": 2, \"email\": \"shopper@example.com\"}'",
+          "lang": "bash"
+        },
+        {
+          "title": "Restock and notify everyone waiting",
+          "desc": "Move stock from 0 to a positive number. Every waiting subscriber gets a queued notification and flips to notified.",
+          "code": "TOKEN=$(curl -s -X POST http://127.0.0.1:8600/api/auth/login \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"email\":\"admin@backinstock.local\",\"password\":\"backinstock123\"}' | jq -r .token)\n\ncurl -s -X POST http://127.0.0.1:8600/api/variants/2/stock \\\n  -H \"Authorization: Bearer $TOKEN\" -H 'Content-Type: application/json' \\\n  -d '{\"stock\": 25}'",
+          "lang": "bash"
+        }
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/health",
+          "desc": "Status, send mode, variant and waiting counts"
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/login",
+          "desc": "Admin login, returns a bearer token"
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/logout",
+          "desc": "Revoke the session"
+        },
+        {
+          "method": "GET",
+          "path": "/api/public/catalog",
+          "desc": "Storefront catalogue, no auth"
+        },
+        {
+          "method": "POST",
+          "path": "/api/public/waitlist",
+          "desc": "Join a waitlist for one variant, no auth"
+        },
+        {
+          "method": "POST",
+          "path": "/api/public/preorder",
+          "desc": "Capture a preorder, no auth"
+        },
+        {
+          "method": "GET",
+          "path": "/api/variants",
+          "desc": "Variants with waiting counts"
+        },
+        {
+          "method": "POST",
+          "path": "/api/variants/{id}/stock",
+          "desc": "Set stock, queues notifications on 0 to positive"
+        },
+        {
+          "method": "GET",
+          "path": "/api/subscriptions",
+          "desc": "All waitlists, optional variant_id filter"
+        },
+        {
+          "method": "GET",
+          "path": "/api/notifications",
+          "desc": "Notification log"
+        },
+        {
+          "method": "GET",
+          "path": "/api/stats",
+          "desc": "Waiting, notified, preorders, sold-out counts"
+        },
+        {
+          "method": "GET",
+          "path": "/api/variants/{id}/subscribers.csv",
+          "desc": "CSV export for one variant"
+        }
+      ],
+      "mcp_tools": [],
+      "verify": {
+        "title": "Run the suite with the server up",
+        "code": "cd services/back-in-stock\nuv run python tests/test_back_in_stock.py\n\n# recorded on this machine:\n# ===== 20/20 checks passed ====="
+      },
+      "notes": [
+        "SEND_MODE defaults to dry_run. Notifications are recorded, not transmitted.",
+        "A real Shopify deployment additionally needs an OAuth app, inventory-level webhooks, and an SMS provider for the SMS channel.",
+        "The suite picks a sold-out variant dynamically, so it is safe to re-run against an existing database."
+      ],
+      "faq": [
+        {
+          "q": "Does it send real email?",
+          "a": "No. By default every notification is written with status dry_run. Nothing is labelled sent unless SMTP was configured and used."
+        },
+        {
+          "q": "Does it need a Shopify account?",
+          "a": "No. Stock is set through the admin API, which simulates what an inventory webhook would do."
+        }
+      ],
+      "monetization": [
+        {
+          "tier": "Self-host",
+          "price": "$0",
+          "detail": "Run it for every store you own. The original charges $19-$99 per store per month."
+        },
+        {
+          "tier": "Hosted for agencies",
+          "price": "Your price",
+          "detail": "Run one instance per client and charge less than a second app subscription on their Shopify bill."
+        },
+        {
+          "tier": "SMS add-on",
+          "price": "Provider cost + margin",
+          "detail": "The SMS channel is modelled but not integrated. Wire a provider and sell the channel as an upgrade."
+        }
+      ],
+      "ui": {
+        "intro": "Storefront at / and admin console at /admin, served by the API process on port 8600.",
+        "images": []
+      }
     }
   ]
 }

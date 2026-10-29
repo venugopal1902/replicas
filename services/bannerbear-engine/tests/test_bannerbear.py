@@ -10,6 +10,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 ROOT = Path(__file__).resolve().parents[1]
+import sys
+sys.path.insert(0, str(ROOT))
 DATA_DIR = ROOT / "data-test"
 DATA_DIR.mkdir(exist_ok=True)
 DB_PATH = DATA_DIR / f"test-{secrets.token_hex(6)}.db"

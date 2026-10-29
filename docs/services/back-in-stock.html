@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Back in Stock · Replicas</title>
+<meta name="description" content="Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.">
+<meta property="og:title" content="Back in Stock · Replicas">
+<meta property="og:description" content="Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236ee7b7'/><text x='16' y='23' font-size='19' font-family='monospace' font-weight='bold' text-anchor='middle' fill='%23061010'>R</text></svg>">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html">
+      <span class="logo">R</span>
+      <span>Replicas</span>
+    </a>
+    <div class="nav-links">
+      <a href="../index.html#services">Services</a>
+      <a href="../index.html#how">How it works</a>
+      <a href="../index.html#stack">Tech</a>
+      <a class="gh-btn" href="https://github.com/venugopal1902/replicas">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div class="doc">
+    <aside class="side">
+      <h5>On this page</h5>
+      <ul><li><a href="#overview">Overview</a></li><li><a href="#ui">Interface</a></li><li><a href="#install">Install</a></li><li><a href="#usage">Usage</a></li><li><a href="#api">API reference</a></li><li><a href="#mcp">MCP tools</a></li><li><a href="#monetize">Monetize</a></li><li><a href="#notes">Operational notes</a></li><li><a href="#faq">FAQ</a></li><h5>Source</h5><ul><li><a href="https://github.com/venugopal1902/replicas/tree/main/services/back-in-stock">Repository</a></li></ul></ul>
+    </aside>
+    <article class="content">
+      <a class="back" href="../index.html">&larr; All services</a>
+      <h1>Back in Stock</h1>
+      <p class="lede" style="font-size:17px">Restock waitlists that actually notify people. Self-hosted, no $19-99/mo per store.</p>
+      <div class="doc-meta">
+        <span>Replaces <b>Back in Stock by Amp</b></span>
+        <span>Version <b>0.1.0</b></span>
+        <span>License <b>MIT</b></span>
+        <span>Runtime <b>Python 3.12</b></span>
+      </div>
+      <h2 id="overview">Overview<a class="anchor-link" href="#overview">#</a></h2><p>Back in Stock by Amp charges Shopify merchants $19 to $99 a month to collect restock waitlists and email shoppers when a sold-out variant returns. This engine reproduces the core loop: per-variant waitlist signup, a restock trigger that queues one notification per waiter, preorder capture, admin stats and per-variant CSV export, plus a storefront demo and admin console. Notifications are recorded as dry_run by default and are never labelled sent unless SMTP was actually configured.</p><div class="pill-row"><span class="chip">replaces Back in Stock by Amp</span><span class="chip">v0.1.0</span><span class="chip">MIT</span><span class="chip">Python 3.12</span></div><h3>What you get</h3><ul><li>20/20 checks passing against a live server</li><li>Per-variant waitlists, no shopper account needed</li><li>Restock trigger queues one notification per waiter</li><li>Preorder capture on sold-out variants</li><li>Admin console and storefront demo</li><li>Per-variant CSV export</li><li>Dry-run by default, never fakes a delivery</li></ul><div class="feature-grid"><div class="feature"><h4>Waitlists</h4><p>Shoppers subscribe to one sold-out variant with an email. Duplicate signups are reported instead of duplicated.</p></div><div class="feature"><h4>Restock trigger</h4><p>Setting stock from 0 to positive queues a notification row for every waiting subscriber and flips them to notified.</p></div><div class="feature"><h4>Preorders</h4><p>Capture intent on sold-out variants with quantity, independent of the waitlist.</p></div><div class="feature"><h4>Admin</h4><p>Stats, variant list with waiting counts, notification log, and CSV export per variant.</p></div><div class="feature"><h4>Honest sends</h4><p>SEND_MODE=dry_run records notifications without transmitting. Nothing is reported as delivered.</p></div></div><h2 id="ui">Interface<a class="anchor-link" href="#ui">#</a></h2><p>Storefront at / and admin console at /admin, served by the API process on port 8600.</p><div class="shots"></div><h2 id="install">Install<a class="anchor-link" href="#install">#</a></h2><p>From a clean machine to a running server in four commands.</p><h3>Requirements</h3><ul><li>Python 3.11 or newer</li><li>uv (Astral)</li><li>No Shopify account needed for the demo</li></ul><h3>Step 1 &middot; Clone</h3><p>Get the source.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">git clone https://github.com/venugopal1902/replicas.git
+cd replicas/services/back-in-stock</code></pre></div><h3>Step 2 &middot; Install</h3><p>Create the environment and install FastAPI.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">uv sync</code></pre></div><h3>Step 3 &middot; Run</h3><p>Start the storefront and admin console on port 8600.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">uv run python scripts/run_server.py</code></pre></div><h3>Run the suite with the server up</h3><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">cd services/back-in-stock
+uv run python tests/test_back_in_stock.py
+
+# recorded on this machine:
+# ===== 20/20 checks passed =====</code></pre></div><div class="table-wrap"><table><thead><tr><th>Surface</th><th>URL</th></tr></thead><tbody><tr><td>Storefront demo</td><td><code>http://127.0.0.1:8600/</code></td></tr><tr><td>Admin console</td><td><code>http://127.0.0.1:8600/admin</code></td></tr><tr><td>Health</td><td><code>http://127.0.0.1:8600/health</code></td></tr><tr><td>OpenAPI docs</td><td><code>http://127.0.0.1:8600/docs</code></td></tr></tbody></table></div><h2 id="usage">Usage<a class="anchor-link" href="#usage">#</a></h2><h3>Join a waitlist</h3><p>A sold-out variant accepts an email with no auth. A duplicate signup returns duplicate:true instead of creating a second row.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">curl -s -X POST http://127.0.0.1:8600/api/public/waitlist \
+  -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;variant_id&quot;: 2, &quot;email&quot;: &quot;shopper@example.com&quot;}&#x27;</code></pre></div><h3>Restock and notify everyone waiting</h3><p>Move stock from 0 to a positive number. Every waiting subscriber gets a queued notification and flips to notified.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">TOKEN=$(curl -s -X POST http://127.0.0.1:8600/api/auth/login \
+  -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;email&quot;:&quot;admin@backinstock.local&quot;,&quot;password&quot;:&quot;backinstock123&quot;}&#x27; | jq -r .token)
+
+curl -s -X POST http://127.0.0.1:8600/api/variants/2/stock \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;stock&quot;: 25}&#x27;</code></pre></div><h2 id="api">API reference<a class="anchor-link" href="#api">#</a></h2><div class="table-wrap"><table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td><span class="method get">GET</span></td><td><code>/health</code></td><td>Status, send mode, variant and waiting counts</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/auth/login</code></td><td>Admin login, returns a bearer token</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/auth/logout</code></td><td>Revoke the session</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/public/catalog</code></td><td>Storefront catalogue, no auth</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/public/waitlist</code></td><td>Join a waitlist for one variant, no auth</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/public/preorder</code></td><td>Capture a preorder, no auth</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/variants</code></td><td>Variants with waiting counts</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/variants/{id}/stock</code></td><td>Set stock, queues notifications on 0 to positive</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/subscriptions</code></td><td>All waitlists, optional variant_id filter</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/notifications</code></td><td>Notification log</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/stats</code></td><td>Waiting, notified, preorders, sold-out counts</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/variants/{id}/subscribers.csv</code></td><td>CSV export for one variant</td></tr></tbody></table></div><h2 id="monetize">Monetize<a class="anchor-link" href="#monetize">#</a></h2><p>The billing layer is built in. Keys carry a plan, a credit balance and an hourly ceiling, so you can resell access without writing auth code.</p><div class="price-grid"><div class="price"><h4>Self-host</h4><b>$0</b><p>Run it for every store you own. The original charges $19-$99 per store per month.</p></div><div class="price"><h4>Hosted for agencies</h4><b>Your price</b><p>Run one instance per client and charge less than a second app subscription on their Shopify bill.</p></div><div class="price"><h4>SMS add-on</h4><b>Provider cost + margin</b><p>The SMS channel is modelled but not integrated. Wire a provider and sell the channel as an upgrade.</p></div></div><div class="callout"><b>Ship it publicly:</b> put the service behind Caddy or Nginx with TLS, point a subdomain at it, then hand clients <code>https://api.yourdomain.com/v2</code> and their own key.</div><h2 id="notes">Operational notes<a class="anchor-link" href="#notes">#</a></h2><div class="callout warn"><b>Read before going live.</b> These are the things that break in production.</div><ul><li>SEND_MODE defaults to dry_run. Notifications are recorded, not transmitted.</li><li>A real Shopify deployment additionally needs an OAuth app, inventory-level webhooks, and an SMS provider for the SMS channel.</li><li>The suite picks a sold-out variant dynamically, so it is safe to re-run against an existing database.</li></ul><h2 id="faq">FAQ<a class="anchor-link" href="#faq">#</a></h2><details><summary>Does it send real email?</summary><p>No. By default every notification is written with status dry_run. Nothing is labelled sent unless SMTP was configured and used.</p></details><details><summary>Does it need a Shopify account?</summary><p>No. Stock is set through the admin API, which simulates what an inventory webhook would do.</p></details>
+    </article>
+  </div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>&copy; Gubbala Venu Gopal</span>
+    <span>Replicas &middot; self-hosted replacements</span>
+    <span class="sp"><a href="https://github.com/venugopal1902/replicas">Source on GitHub</a></span>
+  </div>
+</footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

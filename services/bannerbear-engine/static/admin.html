@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bannerbear Engine | Admin</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1015;--panel:#111a22;--panel2:#16232d;--line:#273743;--text:#e5edf1;--muted:#8ea3ae;--accent:#55d6be;--accent2:#8ae7d4;--danger:#ff887a;--mono:Consolas,"Cascadia Code",monospace;--sans:Segoe UI,Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 var(--sans)}button,input,textarea,select{font:inherit}button{border:1px solid #398d80;background:#153e3a;color:#d9fff7;padding:9px 13px;border-radius:5px;cursor:pointer}button:hover{background:#1b554d}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}button.secondary{background:#18242c;border-color:var(--line);color:var(--text)}header{height:58px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;background:#0e151b}header strong{font:600 15px var(--mono);letter-spacing:.02em}header span{font:12px var(--mono);color:var(--accent)}main{max-width:1280px;margin:0 auto;padding:24px 18px}.shell{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:18px}.panel h2{margin:0 0 16px;font:600 13px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--accent)}label{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px}input,textarea,select{width:100%;background:#0b1218;color:var(--text);border:1px solid var(--line);border-radius:4px;padding:9px}textarea{font:12px/1.5 var(--mono);min-height:210px;resize:vertical}.row{display:flex;gap:9px;align-items:center}.row>*{flex:1}.stack{display:grid;gap:16px}.hint{font-size:12px;color:var(--muted)}.status{min-height:22px;color:var(--accent2);font:12px var(--mono);margin-top:10px}.status.error{color:var(--danger)}.preview{width:100%;max-height:520px;object-fit:contain;background:#071015;border:1px solid var(--line);border-radius:4px;margin-top:12px}.usage{font:12px var(--mono);color:var(--muted);white-space:pre-wrap;max-height:200px;overflow:auto}.topline{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.topline h1{font:600 19px var(--mono);margin:0}.badge{font:11px var(--mono);color:#08201c;background:var(--accent);padding:4px 7px;border-radius:3px}.hidden{display:none}.full{grid-column:1/-1}.login{max-width:390px;margin:9vh auto}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.mono{font-family:var(--mono)}@media(max-width:800px){.shell{grid-template-columns:1fr}main{padding:14px}.full{grid-column:auto}header{padding:0 14px}}
+</style>
+</head>
+<body>
+<header><strong>BB / ENGINE <span>·</span> ADMIN CONSOLE</strong><span id="connection">LOCAL</span></header>
+<main>
+<section id="login" class="panel login">
+<h2>Admin sign in</h2>
+<form id="loginForm"><label for="email">Email</label><input id="email" type="email" autocomplete="username" required value="admin@bannerbear.local"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required><div class="controls"><button type="submit">Sign in</button></div></form><div id="loginStatus" class="status" role="status"></div>
+</section>
+<section id="workspace" class="hidden">
+<div class="topline"><h1>Render workspace</h1><span class="badge">SELF-HOSTED · PNG</span></div>
+<div class="shell">
+<aside class="panel">
+<h2>Project</h2>
+<label for="projectName">New project name</label><input id="projectName" value="Demo Project">
+<label for="credits">Starting credits</label><input id="credits" type="number" min="0" value="100">
+<div class="controls"><button id="createProject">Create project + key</button></div>
+<label for="projectSelect">Project</label><select id="projectSelect"></select>
+<div class="hint">The issued bearer key stays in memory in this tab. Create a new key here if needed.</div>
+<div id="projectStatus" class="status" role="status"></div>
+<hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+<h2>Template</h2>
+<label for="templateName">Name</label><input id="templateName" value="Demo quote card">
+<label for="templateJson">Template JSON, named layers</label>
+<textarea id="templateJson" spellcheck="false">{
+  "width": 1080,
+  "height": 1080,
+  "background": "#101820",
+  "layers": [
+    {"name":"headline","type":"text","text":"Make it tangible.","x":72,"y":250,"font_size":72,"color":"#f2f7f8"},
+    {"name":"subhead","type":"text","text":"One render, one credit.","x":76,"y":380,"font_size":34,"color":"#55d6be"}
+  ]
+}</textarea>
+<div class="controls"><button id="createTemplate" class="secondary">Save template</button><button id="renderTemplate">Render PNG</button></div>
+<div id="templateStatus" class="status" role="status"></div>
+</aside>
+<section class="stack">
+<div class="panel"><h2>Output</h2><div id="renderMeta" class="hint">No render yet.</div><img id="preview" class="preview hidden" alt="Rendered template preview"><div class="controls"><button id="refreshUsage" class="secondary">Refresh credit usage</button></div></div>
+<div class="panel"><h2>Usage ledger</h2><div id="usage" class="usage">No usage loaded.</div></div>
+</section>
+</div>
+</section>
+</main>
+<script>
+(()=>{
+  let adminToken="",projectKey="",templateId="";
+  const $=id=>document.getElementById(id);
+  const status=(id,msg,error=false)=>{const el=$(id);el.textContent=msg;el.classList.toggle("error",error)};
+  const api=async(path,opts={},key=projectKey)=>{
+    const headers={...(opts.headers||{})};
+    if(key)headers.Authorization=`Bearer ${key}`;
+    if(opts.body&&!headers["Content-Type"])headers["Content-Type"]="application/json";
+    const response=await fetch(path,{...opts,headers});
+    const type=response.headers.get("content-type")||"";
+    const body=type.includes("application/json")?await response.json():await response.text();
+    if(!response.ok)throw new Error(typeof body==="string"?body:(body.detail||`HTTP ${response.status}`));
+    return body;
+  };
+  $("loginForm").addEventListener("submit",async e=>{
+    e.preventDefault();status("loginStatus","Authenticating…");
+    try{const result=await api("/api/auth/login",{method:"POST",body:JSON.stringify({email:$("email").value,password:$("password").value})},"");adminToken=result.access_token;$("login").classList.add("hidden");$("workspace").classList.remove("hidden");await loadProjects();status("loginStatus","");}
+    catch(err){status("loginStatus",err.message,true);}
+  });
+  async function loadProjects(){
+    try{const data=await api("/api/admin/projects",{method:"GET",headers:{Authorization:`Bearer ${adminToken}`}},"");const select=$("projectSelect");select.replaceChildren();for(const p of data.items){const o=document.createElement("option");o.value=p.id;o.textContent=`${p.name} · ${p.credits} credits`;select.append(o);}if(data.items.length)status("projectStatus","Select a project and issue a fresh key before rendering.");}
+    catch(err){status("projectStatus",err.message,true);}
+  }
+  $("createProject").addEventListener("click",async()=>{
+    try{const headers={Authorization:`Bearer ${adminToken}`};const p=await api("/api/admin/projects",{method:"POST",headers,body:JSON.stringify({name:$("projectName").value,credits:Number($("credits").value)})},"");const issued=await api(`/api/admin/projects/${p.id}/keys`,{method:"POST",headers,body:JSON.stringify({label:"admin-console"})},"");projectKey=issued.api_key;await loadProjects();$("projectSelect").value=p.id;status("projectStatus",`Key issued once for ${p.name}; active in this tab.`);}
+    catch(err){status("projectStatus",err.message,true);}
+  });
+  $("projectSelect").addEventListener("change",async()=>{
+    const id=$("projectSelect").value;if(!id)return;
+    try{const headers={Authorization:`Bearer ${adminToken}`};const k=await api(`/api/admin/projects/${id}/keys`,{method:"POST",headers,body:JSON.stringify({label:"admin-console-session"})},"");projectKey=k.api_key;status("projectStatus","Fresh project-scoped key issued for this tab.");await refreshUsage();}
+    catch(err){status("projectStatus",err.message,true);}
+  });
+  $("createTemplate").addEventListener("click",async()=>{
+    try{if(!projectKey)throw new Error("Create or select a project first.");const config=JSON.parse($("templateJson").value);const t=await api("/api/templates",{method:"POST",body:JSON.stringify({name:$("templateName").value,...config})});templateId=t.id;status("templateStatus",`Saved ${t.name} (${t.width}×${t.height}).`);}
+    catch(err){status("templateStatus",err.message,true);}
+  });
+  $("renderTemplate").addEventListener("click",async()=>{
+    try{if(!projectKey)throw new Error("Create or select a project first.");if(!templateId)throw new Error("Save a template first.");const result=await api("/api/renders",{method:"POST",body:JSON.stringify({template_id:templateId,overrides:{}})});$("renderMeta").textContent=`Job ${result.job_id} · ${result.status} · ${result.credit_cost} credit`;const deadline=Date.now()+10000;let job=result;while(Date.now()<deadline&&job.status!=="done"&&job.status!=="failed"){await new Promise(r=>setTimeout(r,120));job=await api(`/api/renders/${result.job_id}`);}if(job.status!=="done")throw new Error(job.error||"Render timed out.");const image=await api(`/api/renders/${result.job_id}/download`,{method:"GET"});const blob=new Blob([image],{type:"image/png"});const previous=$("preview").src;if(previous)URL.revokeObjectURL(previous);$("preview").src=URL.createObjectURL(blob);$("preview").classList.remove("hidden");$("renderMeta").textContent=`Job ${result.job_id} · done · ${job.credit_cost} credit`;await refreshUsage();}
+    catch(err){$("renderMeta").textContent=err.message;}
+  });
+  async function refreshUsage(){try{const data=await api("/api/projects/me/usage");$("usage").textContent=data.items.length?data.items.map(x=>`${x.created_at}  ${x.description}  ${x.credits>0?"-":"+"}${Math.abs(x.credits)}  balance=${x.balance_after}`).join("\n"):"No renders yet.";}
+    catch(err){$("usage").textContent=err.message;}}
+  $("refreshUsage").addEventListener("click",refreshUsage);
+})();
+</script>
+</body>
+</html>

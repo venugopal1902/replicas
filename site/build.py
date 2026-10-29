@@ -428,7 +428,7 @@ def render_index(site: dict, services: list[dict]) -> str:
 </a>"""
         )
 
-    platform_count = max((len(s["platforms"]) for s in services), default=0)
+    platform_count = max((len(s.get("platforms") or []) for s in services), default=0)
     endpoint_count = sum(len(s["endpoints"]) for s in services)
     tool_count = sum(len(s["mcp_tools"]) for s in services)
 
@@ -648,10 +648,30 @@ def render_service(site: dict, s: dict) -> str:
     )
 
 
+def normalize_services(services):
+    """Fill optional manifest fields so a service without MCP tools or screenshots still renders."""
+    for s in services:
+        s.setdefault("platforms", [])
+        s.setdefault("endpoints", [])
+        s.setdefault("mcp_tools", [])
+        s.setdefault("stack", [])
+        s.setdefault("highlights", [])
+        s.setdefault("features", [])
+        s.setdefault("ui", {})
+        if not isinstance(s.get("ui"), dict):
+            s["ui"] = {}
+        s["ui"].setdefault("images", [])
+        s["ui"].setdefault("intro", "")
+        for key in ("prereqs", "install", "usage", "urls", "notes", "faq", "monetization"):
+            if not isinstance(s.get(key), list):
+                s[key] = []
+    return services
+
+
 def main() -> None:
     data = json.loads(MANIFEST.read_text(encoding="utf-8"))
     site = data["site"]
-    services = data["services"]
+    services = normalize_services(data["services"])
 
     if DOCS.exists():
         shutil.rmtree(DOCS)
