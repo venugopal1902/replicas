@@ -99,8 +99,32 @@ uv run python tests/test_engine.py     # level 2a: 52 API checks
 uv run python tests/test_features.py   # level 2b: 13 live feature groups
 ```
 
-Full instructions, including the 9-screen console walkthrough and a failure table, are in
-[services/blotato-engine/README.md](services/blotato-engine/README.md).
+### Verify all ten services at once
+
+```bash
+python verify_all.py                 # start what is down, run every suite, stop what it started
+python verify_all.py --keep          # leave the started services running afterwards
+python verify_all.py --only smile-engine geckoboard-engine
+python verify_all.py --skip-start    # only check what is already up
+python verify_all.py --verbose       # print the tail of a failing suite
+```
+
+The harness knows each service's port, start command and suites. It never touches a service it did
+not start: if the port already answers, it uses the running instance and leaves it alone. Services
+that need a first-boot password get the local demo credentials, which are for a demo box only.
+
+Expected output shape:
+
+```
+==============================================================
+10/10 services verified, 310 checks passed
+  PASS  blotato-engine          65/65
+  PASS  lead-engine             50/50
+  ...
+```
+
+Full per-service instructions, console walkthroughs and failure tables live in each
+`services/<slug>/README.md`.
 
 ---
 
