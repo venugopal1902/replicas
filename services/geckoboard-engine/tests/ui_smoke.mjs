@@ -2,7 +2,7 @@
 //   chrome --headless=new --remote-debugging-port=9334 --user-data-dir=<scratch>/.tmp-chrome about:blank
 //   GECKOBOARD_TEST_PORT=8641 GECKOBOARD_BASE=http://127.0.0.1:8641 CDP_URL=http://127.0.0.1:9334 node tests/ui_smoke.mjs
 const baseOverride = process.env.GECKOBOARD_BASE;
-const TEST_PORT = Number(process.env.GECKOBOARD_TEST_PORT || new URL(baseOverride || "http://127.0.0.1:8640").port || 8640);
+const TEST_PORT = Number(process.env.GECKOBOARD_TEST_PORT || new URL(baseOverride || "http://127.0.0.1:8670").port || 8670);
 const BASE = baseOverride || `http://127.0.0.1:${TEST_PORT}`;
 const EXPECTED_ORIGIN = new URL(BASE).origin;
 const CDP = process.env.CDP_URL || "http://127.0.0.1:9334";

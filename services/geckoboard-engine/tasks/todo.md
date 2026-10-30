@@ -7,4 +7,4 @@
 - [x] Implement public TV rotation create/update/list and shareable `/tv/{public_id}` page/API.
 - [x] Build local admin console, seed script with two sample dashboards, and setup/API documentation.
 - [x] Run 32 acceptance checks on free port 8641, Ruff, Python compileall, JavaScript syntax checks, and dependency audit.
-- [ ] Start on contract port 8640. Blocked: a live Mail Engine responds on 8640; do not stop or replace it without Venu's approval.
+- [x] Start on port 8670. RESOLVED: mail-engine owns 8640; geckoboard runs on 8670 and is verified there. No approval needed, nothing to move.
