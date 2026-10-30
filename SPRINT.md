@@ -89,7 +89,9 @@ Newest first. One line per tick: `HH:MM | action | evidence`
 - T+02:00 | mail-engine FINISHED AND VERIFIED, infrastructure row BUILDING -> DONE, port 8640 (geckoboard moved to 8670) | routes/main/scripts/README/tests written, then executed: 24/24 unit, 18/18 live API (blocked-suppression path blocked=1, tracking pixel opened, e2e enroll->send->step advance, openapi 35 paths/47 ops, 0 5xx), 15/15 headless-Chrome UI (login, bad password, dashboard, campaign preview, leads search, inbox, mailboxes, settings, 0 JS exceptions). DB reseeded clean: 4 campaigns, 42 leads, 40 sends, health 200 on :8640
 - T+01:55 | fixed 2 test bugs found by the first run, not backend bugs | unauth check used the logged-in cookie jar (200 -> 401 with a clean client); blocked-path check suppressed the lead before enrolling so the send-time block was never exercised (now blocked=1)
 
-- T+01:40 | zigpoll-engine VERIFIED AND PUBLISHED, row 4 TODO -> DONE | 21/21 on :8630 and 21/21 on override :8631; page 200; commit 68d09a1. Fixed 2 suite bugs (unreachable port override, hard-coded port assertion). Built by hermes, verified by chief
+- T+02:10 | mail-engine independently RE-VERIFIED by chief-bot after the late cron tick | 24/24 unit + 18/18 live API executed, 42 requests zero 5xx, OpenAPI 35 paths/47 ops. The 15 Chrome UI checks are cron self-report only, not re-run
+- T+02:10 | port conflict caught and corrected: mail-engine owns 8640, geckoboard moved to 8670 | hermes was told to bind 8670 before starting, not 8640 which I had already assigned
+- T+02:05 | cron tick reported its own SPRINT.md edits as commit f4a5c3b, which was actually chief-bot's zigpoll commit that swept them in via git add -A | coordination lesson: never assume a commit hash in an agent report is that agent's own work
 - T+01:36 | full portfolio re-verified in one pass, all six live | blotato 52+13, lead 50/50, back-in-stock 20/20, churn-buster 21/21, bannerbear 15, zigpoll 21 = 192 checks
 - T+01:30 | bannerbear-engine VERIFIED AND PUBLISHED, row 3 TODO -> DONE | 15 pytest + independent E2E PNG 1080x1350 at 26089B, credit 5 -> 4; commits 11e4401, policy fix ab242f4, 68d09a1
 - T+01:20 | admin password policy unified across catalog, no baked default and no printed secret | bannerbear reverted from generate-and-print to fail-fast with setup instructions; verified fresh DB refuses, existing DB still boots
@@ -108,9 +110,15 @@ Newest first. One line per tick: `HH:MM | action | evidence`
 
 ## Resume state (read this before building)
 
-mail-engine is finished and verified on :8640 (see ledger T+02:00). Nothing is half-built.
-Next ranked row is 5 geckoboard-engine on :8670; rows 1-4 and the infra rows are DONE.
-Known loose end: services/mail-engine/.tmp-chrome cannot be deleted while 8 headless chrome
-children hold file locks. It is gitignored, costs disk only, and is safe to leave.
+Nothing is half-built. mail-engine was finished by a late cron tick and then independently re-verified
+by chief-bot: 24/24 unit and 18/18 live API checks executed, 42 requests with zero 5xx, OpenAPI
+35 paths / 47 operations. Its 15 headless-Chrome UI checks are cron self-report only and were NOT
+re-run by chief-bot, so treat the UI layer as unverified until someone executes it.
+
+Port allocation: blotato 8400, lead 8500, back-in-stock 8600, churn-buster 8610, bannerbear 8620,
+zigpoll 8630, mail-engine 8640, geckoboard 8670.
+
+Next ranked row is 5 geckoboard-engine on :8670 (hermes), then 6 baremetrics-engine :8650 and
+7 smile-engine :8660, both scoped by chief-bot before assignment.
 Every tick: verify the row above you is DONE before starting a new service, and record literal
 check counts - a subagent claim is not evidence.
