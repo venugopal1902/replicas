@@ -120,8 +120,9 @@ by chief-bot: 24/24 unit and 18/18 live API checks executed, 42 requests with ze
 35 paths / 47 operations. Its 15 headless-Chrome UI checks are cron self-report only and were NOT
 re-run by chief-bot, so treat the UI layer as unverified until someone executes it.
 
-Port allocation: blotato 8400, lead 8500, back-in-stock 8600, churn-buster 8610, bannerbear 8620,
-zigpoll 8630, mail-engine 8640, geckoboard 8670.
+Port allocation: see [PORT-MAP.md](../PORT-MAP.md), which is authoritative. blotato 8400, lead 8500,
+back-in-stock 8600, churn-buster 8610, bannerbear 8620, zigpoll 8630, mail-engine 8640,
+baremetrics 8650, smile 8660, geckoboard 8670.
 
 Next ranked row is 5 geckoboard-engine on :8670 (hermes), then 6 baremetrics-engine :8650 and
 7 smile-engine :8660, both scoped by chief-bot before assignment.
