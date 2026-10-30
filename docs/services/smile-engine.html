@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smile Engine · Replicas</title>
+<meta name="description" content="Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.">
+<meta property="og:title" content="Smile Engine · Replicas">
+<meta property="og:description" content="Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236ee7b7'/><text x='16' y='23' font-size='19' font-family='monospace' font-weight='bold' text-anchor='middle' fill='%23061010'>R</text></svg>">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html">
+      <span class="logo">R</span>
+      <span>Replicas</span>
+    </a>
+    <div class="nav-links">
+      <a href="../index.html#services">Services</a>
+      <a href="../index.html#how">How it works</a>
+      <a href="../index.html#stack">Tech</a>
+      <a class="gh-btn" href="https://github.com/venugopal1902/replicas">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div class="doc">
+    <aside class="side">
+      <h5>On this page</h5>
+      <ul><li><a href="#overview">Overview</a></li><li><a href="#ui">Interface</a></li><li><a href="#install">Install</a></li><li><a href="#usage">Usage</a></li><li><a href="#api">API reference</a></li><li><a href="#mcp">MCP tools</a></li><li><a href="#monetize">Monetize</a></li><li><a href="#notes">Operational notes</a></li><li><a href="#faq">FAQ</a></li><h5>Source</h5><ul><li><a href="https://github.com/venugopal1902/replicas/tree/main/services/smile-engine">Repository</a></li></ul></ul>
+    </aside>
+    <article class="content">
+      <a class="back" href="../index.html">&larr; All services</a>
+      <h1>Smile Engine</h1>
+      <p class="lede" style="font-size:17px">An append-only points ledger with derived balances. Spending cannot corrupt the history.</p>
+      <div class="doc-meta">
+        <span>Replaces <b>Smile.io</b></span>
+        <span>Version <b>0.1.0</b></span>
+        <span>License <b>MIT</b></span>
+        <span>Runtime <b>Python 3.12</b></span>
+      </div>
+      <h2 id="overview">Overview<a class="anchor-link" href="#overview">#</a></h2><p>Smile.io sells loyalty points, referrals and VIP tiers from $15 to $199 a month. This engine treats the program as what it actually is: a ledger. There is no mutable balance column. Balance is always SUM(points) over append-only entries, every mutation carries an idempotency key, a refused redemption writes nothing, referrals award both sides while refusing self-referral and duplicate referees, and tiers derive from lifetime earned points so spending never demotes a member.</p><div class="pill-row"><span class="chip">replaces Smile.io</span><span class="chip">v0.1.0</span><span class="chip">MIT</span><span class="chip">Python 3.12</span></div><h3>What you get</h3><ul><li>22/22 checks passing on the first run</li><li>No mutable balance column: balance is derived from entries</li><li>Idempotency key required on every earn and redeem</li><li>A refused redemption writes no ledger entry</li><li>Self-referral and duplicate referees refused</li><li>Tiers from lifetime earned, not spendable balance</li><li>Full ledger CSV export</li></ul><div class="feature-grid"><div class="feature"><h4>Ledger</h4><p>Append-only earn, redeem and adjust entries, each with a reason, timestamp and unique idempotency key.</p></div><div class="feature"><h4>Idempotency</h4><p>Replaying a request cannot double-award or double-spend. The endpoint reports duplicate rather than failing.</p></div><div class="feature"><h4>Redemption</h4><p>A short balance returns 409 and writes nothing, so the ledger never records a spend that did not happen.</p></div><div class="feature"><h4>Referrals</h4><p>Referrer and referee both earn. Self-referral and referring an existing member are refused.</p></div><div class="feature"><h4>Tiers</h4><p>Bronze/silver/gold/platinum from lifetime earned, with progress to the next tier.</p></div></div><h2 id="ui">Interface<a class="anchor-link" href="#ui">#</a></h2><p>Console at / on port 8660 listing members with derived balances and tier progress.</p><div class="shots"></div><h2 id="install">Install<a class="anchor-link" href="#install">#</a></h2><p>From a clean machine to a running server in four commands.</p><h3>Requirements</h3><ul><li>Python 3.11 or newer</li><li>uv (Astral)</li><li>ADMIN_PASSWORD set before first start</li></ul><h3>Step 1 &middot; Clone</h3><p>Get the source.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">git clone https://github.com/venugopal1902/replicas.git
+cd replicas/services/smile-engine</code></pre></div><h3>Step 2 &middot; Install</h3><p>Create the environment.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">uv sync</code></pre></div><h3>Step 3 &middot; Set the admin password</h3><p>Required on first start.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">export ADMIN_PASSWORD=&#x27;choose-a-long-unique-password&#x27;</code></pre></div><h3>Step 4 &middot; Run</h3><p>Console on port 8660.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">uv run python scripts/run_server.py</code></pre></div><h3>Run the suite with the server up</h3><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">cd services/smile-engine
+uv run python tests/test_smile.py
+
+# recorded: ===== 22/22 checks passed =====  (first run)</code></pre></div><div class="table-wrap"><table><thead><tr><th>Surface</th><th>URL</th></tr></thead><tbody><tr><td>Console</td><td><code>http://127.0.0.1:8660/</code></td></tr><tr><td>Health</td><td><code>http://127.0.0.1:8660/health</code></td></tr><tr><td>OpenAPI docs</td><td><code>http://127.0.0.1:8660/docs</code></td></tr></tbody></table></div><h2 id="usage">Usage<a class="anchor-link" href="#usage">#</a></h2><h3>Earn and spend safely</h3><p>Both calls take an idempotency key, so a network retry is harmless. Balance is recomputed from the ledger on every read.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">curl -s -X POST http://127.0.0.1:8660/api/members/$MEMBER/earn \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;points&quot;:300,&quot;reason&quot;:&quot;purchase&quot;,&quot;idempotency_key&quot;:&quot;order-1041&quot;}&#x27;
+
+curl -s -X POST http://127.0.0.1:8660/api/members/$MEMBER/redeem \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;reward_id&quot;:&quot;rw_latte&quot;,&quot;idempotency_key&quot;:&quot;redeem-1041&quot;}&#x27;
+
+# a short balance returns 409 and writes nothing</code></pre></div><h2 id="api">API reference<a class="anchor-link" href="#api">#</a></h2><div class="table-wrap"><table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td><span class="method get">GET</span></td><td><code>/health</code></td><td>Members, ledger entries, points outstanding</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/auth/login</code></td><td>Admin token</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/members</code></td><td>Members with derived balance and tier</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/members</code></td><td>Create a member and referral code</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/members/{id}</code></td><td>Balance, lifetime earned, tier progress</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/members/{id}/earn</code></td><td>Award points, idempotency key required</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/members/{id}/redeem</code></td><td>Spend points, 409 if short</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/members/{id}/ledger</code></td><td>Entries plus derived balance</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/referrals</code></td><td>Award both sides of a referral</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/rewards</code></td><td>Reward catalogue</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/tiers</code></td><td>Tier thresholds</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/report.csv</code></td><td>Full ledger export</td></tr></tbody></table></div><h2 id="monetize">Monetize<a class="anchor-link" href="#monetize">#</a></h2><p>The billing layer is built in. Keys carry a plan, a credit balance and an hourly ceiling, so you can resell access without writing auth code.</p><div class="price-grid"><div class="price"><h4>Self-host</h4><b>$0</b><p>The incumbent charges $15 to $199 a month. Run the same program on your own box.</p></div><div class="price"><h4>Agency loyalty</h4><b>Your price</b><p>Host per merchant with their own reward catalogue and ledger export.</p></div><div class="price"><h4>Expiry engine</h4><b>Add-on</b><p>Points expiry and liability reporting are the obvious paid extension, since neither exists here.</p></div></div><div class="callout"><b>Ship it publicly:</b> put the service behind Caddy or Nginx with TLS, point a subdomain at it, then hand clients <code>https://api.yourdomain.com/v2</code> and their own key.</div><h2 id="notes">Operational notes<a class="anchor-link" href="#notes">#</a></h2><div class="callout warn"><b>Read before going live.</b> These are the things that break in production.</div><ul><li>No Shopify integration: members are created through the API.</li><li>No points expiry, so outstanding liability grows. That is the next thing to build for production.</li><li>Refunds should be negative adjust entries; the schema supports it, no endpoint exposes it yet.</li><li>No fraud scoring beyond self-referral and duplicate-referee refusals.</li></ul><h2 id="faq">FAQ<a class="anchor-link" href="#faq">#</a></h2><details><summary>Why is there no balance column?</summary><p>Because balances drift out of sync with history. Deriving the balance from append-only entries makes that impossible by construction.</p></details><details><summary>What happens if a redemption request is retried?</summary><p>The idempotency key makes the second call a no-op that reports duplicate, so points are spent once.</p></details>
+    </article>
+  </div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>&copy; Gubbala Venu Gopal</span>
+    <span>Replicas &middot; self-hosted replacements</span>
+    <span class="sp"><a href="https://github.com/venugopal1902/replicas">Source on GitHub</a></span>
+  </div>
+</footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

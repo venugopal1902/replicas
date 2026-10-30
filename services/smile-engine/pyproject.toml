@@ -1,0 +1,9 @@
+[project]
+name = "smile-engine"
+version = "0.1.0"
+description = "Self-hosted loyalty engine: points ledger, referrals, VIP tiers (clean-room Smile.io replica)"
+requires-python = ">=3.11"
+dependencies = ["fastapi>=0.110", "uvicorn>=0.27"]
+
+[tool.uv]
+package = false

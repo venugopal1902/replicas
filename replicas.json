@@ -2240,6 +2240,214 @@
         "intro": "Dashboard console at / and public TV rotation at /tv/<public_id> on port 8670.",
         "images": []
       }
+    },
+    {
+      "slug": "smile-engine",
+      "name": "Smile Engine",
+      "replaces": "Smile.io",
+      "replaces_url": "https://smile.io/pricing",
+      "tagline": "An append-only points ledger with derived balances. Spending cannot corrupt the history.",
+      "status": "stable",
+      "version": "0.1.0",
+      "language": "Python 3.12",
+      "license": "MIT",
+      "repo_path": "services/smile-engine",
+      "stack": [
+        "FastAPI",
+        "SQLite",
+        "Uvicorn",
+        "Vanilla JS console"
+      ],
+      "platforms": [],
+      "summary": "Smile.io sells loyalty points, referrals and VIP tiers from $15 to $199 a month. This engine treats the program as what it actually is: a ledger. There is no mutable balance column. Balance is always SUM(points) over append-only entries, every mutation carries an idempotency key, a refused redemption writes nothing, referrals award both sides while refusing self-referral and duplicate referees, and tiers derive from lifetime earned points so spending never demotes a member.",
+      "highlights": [
+        "22/22 checks passing on the first run",
+        "No mutable balance column: balance is derived from entries",
+        "Idempotency key required on every earn and redeem",
+        "A refused redemption writes no ledger entry",
+        "Self-referral and duplicate referees refused",
+        "Tiers from lifetime earned, not spendable balance",
+        "Full ledger CSV export"
+      ],
+      "features": [
+        {
+          "title": "Ledger",
+          "body": "Append-only earn, redeem and adjust entries, each with a reason, timestamp and unique idempotency key."
+        },
+        {
+          "title": "Idempotency",
+          "body": "Replaying a request cannot double-award or double-spend. The endpoint reports duplicate rather than failing."
+        },
+        {
+          "title": "Redemption",
+          "body": "A short balance returns 409 and writes nothing, so the ledger never records a spend that did not happen."
+        },
+        {
+          "title": "Referrals",
+          "body": "Referrer and referee both earn. Self-referral and referring an existing member are refused."
+        },
+        {
+          "title": "Tiers",
+          "body": "Bronze/silver/gold/platinum from lifetime earned, with progress to the next tier."
+        }
+      ],
+      "prereqs": [
+        "Python 3.11 or newer",
+        "uv (Astral)",
+        "ADMIN_PASSWORD set before first start"
+      ],
+      "install": [
+        {
+          "title": "Clone",
+          "desc": "Get the source.",
+          "lang": "bash",
+          "code": "git clone https://github.com/venugopal1902/replicas.git\ncd replicas/services/smile-engine"
+        },
+        {
+          "title": "Install",
+          "desc": "Create the environment.",
+          "lang": "bash",
+          "code": "uv sync"
+        },
+        {
+          "title": "Set the admin password",
+          "desc": "Required on first start.",
+          "lang": "bash",
+          "code": "export ADMIN_PASSWORD='choose-a-long-unique-password'"
+        },
+        {
+          "title": "Run",
+          "desc": "Console on port 8660.",
+          "lang": "bash",
+          "code": "uv run python scripts/run_server.py"
+        }
+      ],
+      "urls": [
+        {
+          "label": "Console",
+          "value": "http://127.0.0.1:8660/"
+        },
+        {
+          "label": "Health",
+          "value": "http://127.0.0.1:8660/health"
+        },
+        {
+          "label": "OpenAPI docs",
+          "value": "http://127.0.0.1:8660/docs"
+        }
+      ],
+      "usage": [
+        {
+          "title": "Earn and spend safely",
+          "desc": "Both calls take an idempotency key, so a network retry is harmless. Balance is recomputed from the ledger on every read.",
+          "code": "curl -s -X POST http://127.0.0.1:8660/api/members/$MEMBER/earn \\\n  -H \"Authorization: Bearer $TOKEN\" -H 'Content-Type: application/json' \\\n  -d '{\"points\":300,\"reason\":\"purchase\",\"idempotency_key\":\"order-1041\"}'\n\ncurl -s -X POST http://127.0.0.1:8660/api/members/$MEMBER/redeem \\\n  -H \"Authorization: Bearer $TOKEN\" -H 'Content-Type: application/json' \\\n  -d '{\"reward_id\":\"rw_latte\",\"idempotency_key\":\"redeem-1041\"}'\n\n# a short balance returns 409 and writes nothing",
+          "lang": "bash"
+        }
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/health",
+          "desc": "Members, ledger entries, points outstanding"
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/login",
+          "desc": "Admin token"
+        },
+        {
+          "method": "GET",
+          "path": "/api/members",
+          "desc": "Members with derived balance and tier"
+        },
+        {
+          "method": "POST",
+          "path": "/api/members",
+          "desc": "Create a member and referral code"
+        },
+        {
+          "method": "GET",
+          "path": "/api/members/{id}",
+          "desc": "Balance, lifetime earned, tier progress"
+        },
+        {
+          "method": "POST",
+          "path": "/api/members/{id}/earn",
+          "desc": "Award points, idempotency key required"
+        },
+        {
+          "method": "POST",
+          "path": "/api/members/{id}/redeem",
+          "desc": "Spend points, 409 if short"
+        },
+        {
+          "method": "GET",
+          "path": "/api/members/{id}/ledger",
+          "desc": "Entries plus derived balance"
+        },
+        {
+          "method": "POST",
+          "path": "/api/referrals",
+          "desc": "Award both sides of a referral"
+        },
+        {
+          "method": "GET",
+          "path": "/api/rewards",
+          "desc": "Reward catalogue"
+        },
+        {
+          "method": "GET",
+          "path": "/api/tiers",
+          "desc": "Tier thresholds"
+        },
+        {
+          "method": "GET",
+          "path": "/api/report.csv",
+          "desc": "Full ledger export"
+        }
+      ],
+      "mcp_tools": [],
+      "verify": {
+        "title": "Run the suite with the server up",
+        "code": "cd services/smile-engine\nuv run python tests/test_smile.py\n\n# recorded: ===== 22/22 checks passed =====  (first run)"
+      },
+      "notes": [
+        "No Shopify integration: members are created through the API.",
+        "No points expiry, so outstanding liability grows. That is the next thing to build for production.",
+        "Refunds should be negative adjust entries; the schema supports it, no endpoint exposes it yet.",
+        "No fraud scoring beyond self-referral and duplicate-referee refusals."
+      ],
+      "faq": [
+        {
+          "q": "Why is there no balance column?",
+          "a": "Because balances drift out of sync with history. Deriving the balance from append-only entries makes that impossible by construction."
+        },
+        {
+          "q": "What happens if a redemption request is retried?",
+          "a": "The idempotency key makes the second call a no-op that reports duplicate, so points are spent once."
+        }
+      ],
+      "monetization": [
+        {
+          "tier": "Self-host",
+          "price": "$0",
+          "detail": "The incumbent charges $15 to $199 a month. Run the same program on your own box."
+        },
+        {
+          "tier": "Agency loyalty",
+          "price": "Your price",
+          "detail": "Host per merchant with their own reward catalogue and ledger export."
+        },
+        {
+          "tier": "Expiry engine",
+          "price": "Add-on",
+          "detail": "Points expiry and liability reporting are the obvious paid extension, since neither exists here."
+        }
+      ],
+      "ui": {
+        "intro": "Console at / on port 8660 listing members with derived balances and tier progress.",
+        "images": []
+      }
     }
   ]
 }

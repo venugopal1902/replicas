@@ -17,10 +17,10 @@ import httpx
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-TEST_PORT = int(os.environ.get("GECKOBOARD_TEST_PORT", "8670"))
+TEST_PORT = int(os.environ.get("GECKOBOARD_TEST_PORT", "8640"))
 BASE_URL = f"http://127.0.0.1:{TEST_PORT}"
 TEST_DIR = ROOT / "data-test"
-DB_PATH = TEST_DIR / "acceptance.db"
+DB_PATH = TEST_DIR / f"acceptance-{TEST_PORT}-{secrets.token_hex(4)}.db"
 
 
 @dataclass(repr=False)
