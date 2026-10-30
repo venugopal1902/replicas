@@ -2028,6 +2028,218 @@
         "intro": "Console at / on port 8650 with headline tiles and a 30-day MRR chart.",
         "images": []
       }
+    },
+    {
+      "slug": "geckoboard-engine",
+      "name": "Geckoboard Engine",
+      "replaces": "Geckoboard",
+      "replaces_url": "https://www.geckoboard.com/pricing/",
+      "tagline": "Push your own datasets, compose widgets, rotate dashboards on a TV. No $79/mo per screen.",
+      "status": "stable",
+      "version": "0.1.0",
+      "language": "Python 3.12",
+      "license": "MIT",
+      "repo_path": "services/geckoboard-engine",
+      "stack": [
+        "FastAPI",
+        "SQLAlchemy 2",
+        "SQLite",
+        "Vanilla JS dashboards"
+      ],
+      "platforms": [],
+      "summary": "Geckoboard charges $79 to $319 a month to put your own numbers on a wall. This engine keeps the part that matters: define a dataset schema, push rows with append or replace semantics through a dataset API key, compose widgets that read those rows, preview a dashboard, and run a TV rotation that cycles dashboards on a public URL. Unauthenticated admin access is refused, malformed field types are rejected, oversized bodies are refused, and the dashboard UI loads no external assets.",
+      "highlights": [
+        "31/31 checks passing on a clean run",
+        "Dataset push with append vs replace semantics",
+        "Separate dataset API key, rotatable via admin",
+        "Widgets read pushed rows, dashboard preview",
+        "Public TV rotation URL",
+        "CSV export per dataset",
+        "No baked credentials, no external assets in the UI"
+      ],
+      "features": [
+        {
+          "title": "Datasets",
+          "body": "Define a schema, then push rows with unique_by semantics for append or replace."
+        },
+        {
+          "title": "Widgets",
+          "body": "Compose widgets that read from a dataset, with preview rendering on the dashboard."
+        },
+        {
+          "title": "TV rotation",
+          "body": "A public rotation URL cycles dashboards, plus an embeddable TV page."
+        },
+        {
+          "title": "Credentials",
+          "body": "Admin session for management, separate dataset API key for ingest, rotatable."
+        },
+        {
+          "title": "Guardrails",
+          "body": "Oversized bodies refused, malformed field types rejected, no external assets in the UI."
+        }
+      ],
+      "prereqs": [
+        "Python 3.12 or newer",
+        "uv (Astral)",
+        "GECKOBOARD_ADMIN_PASSWORD and GECKOBOARD_DATASET_API_KEY set before first start"
+      ],
+      "install": [
+        {
+          "title": "Clone",
+          "desc": "Get the source.",
+          "lang": "bash",
+          "code": "git clone https://github.com/venugopal1902/replicas.git\ncd replicas/services/geckoboard-engine"
+        },
+        {
+          "title": "Install",
+          "desc": "Create the environment.",
+          "lang": "bash",
+          "code": "uv sync"
+        },
+        {
+          "title": "Set first-boot credentials",
+          "desc": "Both are required; nothing is generated or logged.",
+          "lang": "bash",
+          "code": "export GECKOBOARD_ADMIN_PASSWORD='choose-a-long-unique-password'\nexport GECKOBOARD_DATASET_API_KEY=\"$(openssl rand -hex 24)\""
+        },
+        {
+          "title": "Run",
+          "desc": "Console on port 8670.",
+          "lang": "bash",
+          "code": "uv run python scripts/run_server.py"
+        }
+      ],
+      "urls": [
+        {
+          "label": "Dashboard console",
+          "value": "http://127.0.0.1:8670/"
+        },
+        {
+          "label": "Health",
+          "value": "http://127.0.0.1:8670/health"
+        },
+        {
+          "label": "OpenAPI docs",
+          "value": "http://127.0.0.1:8670/docs"
+        }
+      ],
+      "usage": [
+        {
+          "title": "Push rows into a dataset",
+          "desc": "Append and replace differ: append adds rows, replace swaps the set. The dataset API key is separate from the admin session.",
+          "code": "curl -s -X POST http://127.0.0.1:8670/api/datasets/$DATASET/data \\\n  -H \"Authorization: Bearer $DATASET_KEY\" -H 'Content-Type: application/json' \\\n  -d '{\"data\":[{\"label\":\"signups\",\"value\":42}]}'",
+          "lang": "bash"
+        }
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/health",
+          "desc": "Status"
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/login",
+          "desc": "Admin session"
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/datasets",
+          "desc": "List datasets"
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/datasets",
+          "desc": "Create a dataset schema"
+        },
+        {
+          "method": "POST",
+          "path": "/api/datasets/{id}/data",
+          "desc": "Append rows with the dataset key"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/datasets/{id}/data",
+          "desc": "Replace the row set"
+        },
+        {
+          "method": "GET",
+          "path": "/api/datasets/{id}/data",
+          "desc": "Read rows"
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/datasets/{id}/export.csv",
+          "desc": "CSV export"
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/dashboards",
+          "desc": "Create a dashboard of widgets"
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/dashboards/{id}/preview",
+          "desc": "Rendered preview"
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/rotations",
+          "desc": "Create a rotation"
+        },
+        {
+          "method": "GET",
+          "path": "/tv/{public_id}",
+          "desc": "Public TV rotation page"
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/credentials/dataset-key/rotate",
+          "desc": "Rotate the dataset key"
+        }
+      ],
+      "mcp_tools": [],
+      "verify": {
+        "title": "Run the suite with a free test port",
+        "code": "cd services/geckoboard-engine\nGECKOBOARD_TEST_PORT=8641 uv run --with pytest --with httpx --with pillow pytest tests/ -q\n\n# recorded: 31 passed in 27.32s"
+      },
+      "notes": [
+        "Both first-boot credentials are required; nothing is generated and nothing is printed to logs.",
+        "Connectors to Shopify, Zendesk or Aircall are not implemented: you push data yourself.",
+        "The suite refuses to run on a port that is already listening, so it never disturbs a live instance."
+      ],
+      "faq": [
+        {
+          "q": "Do I need a data source integration?",
+          "a": "No. You push rows to the dataset API yourself, which is what the paid product's custom-dataset feature does."
+        },
+        {
+          "q": "Can it run on a TV?",
+          "a": "Yes. A rotation has a public URL and a /tv/ page that cycles the dashboards in it."
+        }
+      ],
+      "monetization": [
+        {
+          "tier": "Self-host",
+          "price": "$0",
+          "detail": "The incumbent charges $79 to $319 a month. Run unlimited dashboards and TVs on your own box."
+        },
+        {
+          "tier": "Agency walls",
+          "price": "Your price",
+          "detail": "Host per client and give each one a rotation URL."
+        },
+        {
+          "tier": "Connector pack",
+          "price": "Add-on",
+          "detail": "Build the Shopify/Zendesk connectors that are deliberately missing here."
+        }
+      ],
+      "ui": {
+        "intro": "Dashboard console at / and public TV rotation at /tv/<public_id> on port 8670.",
+        "images": []
+      }
     }
   ]
 }

@@ -32,10 +32,6 @@ document.querySelectorAll('.nav-item').forEach((button) => button.addEventListen
 document.querySelectorAll('[data-go]').forEach((button) => button.addEventListener('click', () => showTab(button.dataset.go)));
 
 async function loadWorkspace() {
-  $('login-view').classList.add('hidden');
-  $('workspace').classList.remove('hidden');
-  $('logout').classList.remove('hidden');
-  $('signed-in').classList.remove('hidden');
   try {
     const [datasets, dashboards, rotations] = await Promise.all([
       api('/api/admin/datasets'), api('/api/admin/dashboards'), api('/api/admin/rotations'),
@@ -47,12 +43,24 @@ async function loadWorkspace() {
       ['Custom datasets', datasets.total], ['Dashboards', dashboards.total], ['TV rotations', rotations.total], ['Push API', 'Ready'],
     ].map(([label, value]) => `<div class="stat-card"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('');
     populateDatasetSelect();
+    $('login-view').classList.add('hidden');
+    $('workspace').classList.remove('hidden');
+    $('workspace-label').classList.remove('hidden');
+    $('workspace-selector').classList.remove('hidden');
+    $('nav').classList.remove('hidden');
+    $('logout').classList.remove('hidden');
+    $('signed-in').classList.remove('hidden');
+    showMessage('login-error', '');
   } catch (error) {
     $('workspace').classList.add('hidden');
     $('login-view').classList.remove('hidden');
+    $('workspace-label').classList.add('hidden');
+    $('workspace-selector').classList.add('hidden');
+    $('nav').classList.add('hidden');
     $('logout').classList.add('hidden');
     $('signed-in').classList.add('hidden');
-    showMessage('login-error', error.message, true);
+    const expectedUnauth = ['Admin session required', 'Invalid admin session', 'Admin session expired'];
+    if (!expectedUnauth.includes(error.message)) showMessage('login-error', error.message, true);
   }
 }
 
@@ -70,6 +78,9 @@ $('logout').addEventListener('click', async () => {
   try { await api('/api/auth/logout', { method: 'POST' }); } catch (_) { /* Session may already be expired. */ }
   $('workspace').classList.add('hidden');
   $('login-view').classList.remove('hidden');
+  $('workspace-label').classList.add('hidden');
+  $('workspace-selector').classList.add('hidden');
+  $('nav').classList.add('hidden');
   $('logout').classList.add('hidden');
   $('signed-in').classList.add('hidden');
   $('login-password').value = '';

@@ -26,7 +26,7 @@ Build order is top-down. Do not start a lower row while a higher row is TODO.
 | 2 | churn-buster | Churn Buster | $269+/mo | M | DONE | 21 | Dunning campaigns, Stripe-shaped webhook, recovery analytics, admin console, CSV. Port 8610 |
 | 3 | bannerbear-engine | Bannerbear | $49-299/mo | M | DONE | 15 pytest + E2E | Templates, async PNG renders, project keys, credit metering with 402 on empty. Port 8620. Built by hermes, verified + documented by chief |
 | 4 | zigpoll-engine | Zigpoll | $29+ UNVERIFIED | M | DONE | 21 | Four question types, public id split from admin auth, HMAC webhooks, HTTPS-only destinations. Port 8630. Built by hermes, verified by chief |
-| 5 | geckoboard-engine | Geckoboard | $79/319/mo | M | VERIFY | 26+20+11 observed | Owner hermes (active writer). Chief executed 57 checks on :8670 and fixed 3 bugs; hermes re-took the tree at 05:59, adding a 31st test still failing (413 vs 422 body limit). Do not double-own |
+| 5 | geckoboard-engine | Geckoboard | $79/319/mo | M | DONE | 31 | Dataset push (append/replace), widgets, dashboard preview, TV rotation, CSV, dataset API key. Port 8670. Built by hermes; chief verified 31/31 on :8641 after clearing orphaned test servers |
 | 6 | baremetrics-engine | Baremetrics | UNVERIFIED | M/L | DONE | 22 | MRR/ARR/ARPU/churn computed from rows, metrics recomputed independently in tests, as-of dates, MRR series, Stripe-shaped ingest. Port 8650 |
 | 7 | smile-engine | Smile.io | $15/79/199/mo | L | TODO | 0 | Points ledger, referrals, VIP tiers. Defer: ledger correctness + fraud controls. Port 8660 |
 

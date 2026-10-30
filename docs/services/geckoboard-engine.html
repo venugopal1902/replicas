@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Geckoboard Engine · Replicas</title>
+<meta name="description" content="Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.">
+<meta property="og:title" content="Geckoboard Engine · Replicas">
+<meta property="og:description" content="Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236ee7b7'/><text x='16' y='23' font-size='19' font-family='monospace' font-weight='bold' text-anchor='middle' fill='%23061010'>R</text></svg>">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html">
+      <span class="logo">R</span>
+      <span>Replicas</span>
+    </a>
+    <div class="nav-links">
+      <a href="../index.html#services">Services</a>
+      <a href="../index.html#how">How it works</a>
+      <a href="../index.html#stack">Tech</a>
+      <a class="gh-btn" href="https://github.com/venugopal1902/replicas">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div class="doc">
+    <aside class="side">
+      <h5>On this page</h5>
+      <ul><li><a href="#overview">Overview</a></li><li><a href="#ui">Interface</a></li><li><a href="#install">Install</a></li><li><a href="#usage">Usage</a></li><li><a href="#api">API reference</a></li><li><a href="#mcp">MCP tools</a></li><li><a href="#monetize">Monetize</a></li><li><a href="#notes">Operational notes</a></li><li><a href="#faq">FAQ</a></li><h5>Source</h5><ul><li><a href="https://github.com/venugopal1902/replicas/tree/main/services/geckoboard-engine">Repository</a></li></ul></ul>
+    </aside>
+    <article class="content">
+      <a class="back" href="../index.html">&larr; All services</a>
+      <h1>Geckoboard Engine</h1>
+      <p class="lede" style="font-size:17px">Push your own datasets, compose widgets, rotate dashboards on a TV. No $79/mo per screen.</p>
+      <div class="doc-meta">
+        <span>Replaces <b>Geckoboard</b></span>
+        <span>Version <b>0.1.0</b></span>
+        <span>License <b>MIT</b></span>
+        <span>Runtime <b>Python 3.12</b></span>
+      </div>
+      <h2 id="overview">Overview<a class="anchor-link" href="#overview">#</a></h2><p>Geckoboard charges $79 to $319 a month to put your own numbers on a wall. This engine keeps the part that matters: define a dataset schema, push rows with append or replace semantics through a dataset API key, compose widgets that read those rows, preview a dashboard, and run a TV rotation that cycles dashboards on a public URL. Unauthenticated admin access is refused, malformed field types are rejected, oversized bodies are refused, and the dashboard UI loads no external assets.</p><div class="pill-row"><span class="chip">replaces Geckoboard</span><span class="chip">v0.1.0</span><span class="chip">MIT</span><span class="chip">Python 3.12</span></div><h3>What you get</h3><ul><li>31/31 checks passing on a clean run</li><li>Dataset push with append vs replace semantics</li><li>Separate dataset API key, rotatable via admin</li><li>Widgets read pushed rows, dashboard preview</li><li>Public TV rotation URL</li><li>CSV export per dataset</li><li>No baked credentials, no external assets in the UI</li></ul><div class="feature-grid"><div class="feature"><h4>Datasets</h4><p>Define a schema, then push rows with unique_by semantics for append or replace.</p></div><div class="feature"><h4>Widgets</h4><p>Compose widgets that read from a dataset, with preview rendering on the dashboard.</p></div><div class="feature"><h4>TV rotation</h4><p>A public rotation URL cycles dashboards, plus an embeddable TV page.</p></div><div class="feature"><h4>Credentials</h4><p>Admin session for management, separate dataset API key for ingest, rotatable.</p></div><div class="feature"><h4>Guardrails</h4><p>Oversized bodies refused, malformed field types rejected, no external assets in the UI.</p></div></div><h2 id="ui">Interface<a class="anchor-link" href="#ui">#</a></h2><p>Dashboard console at / and public TV rotation at /tv/&lt;public_id&gt; on port 8670.</p><div class="shots"></div><h2 id="install">Install<a class="anchor-link" href="#install">#</a></h2><p>From a clean machine to a running server in four commands.</p><h3>Requirements</h3><ul><li>Python 3.12 or newer</li><li>uv (Astral)</li><li>GECKOBOARD_ADMIN_PASSWORD and GECKOBOARD_DATASET_API_KEY set before first start</li></ul><h3>Step 1 &middot; Clone</h3><p>Get the source.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">git clone https://github.com/venugopal1902/replicas.git
+cd replicas/services/geckoboard-engine</code></pre></div><h3>Step 2 &middot; Install</h3><p>Create the environment.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">uv sync</code></pre></div><h3>Step 3 &middot; Set first-boot credentials</h3><p>Both are required; nothing is generated or logged.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">export GECKOBOARD_ADMIN_PASSWORD=&#x27;choose-a-long-unique-password&#x27;
+export GECKOBOARD_DATASET_API_KEY=&quot;$(openssl rand -hex 24)&quot;</code></pre></div><h3>Step 4 &middot; Run</h3><p>Console on port 8670.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">uv run python scripts/run_server.py</code></pre></div><h3>Run the suite with a free test port</h3><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">cd services/geckoboard-engine
+GECKOBOARD_TEST_PORT=8641 uv run --with pytest --with httpx --with pillow pytest tests/ -q
+
+# recorded: 31 passed in 27.32s</code></pre></div><div class="table-wrap"><table><thead><tr><th>Surface</th><th>URL</th></tr></thead><tbody><tr><td>Dashboard console</td><td><code>http://127.0.0.1:8670/</code></td></tr><tr><td>Health</td><td><code>http://127.0.0.1:8670/health</code></td></tr><tr><td>OpenAPI docs</td><td><code>http://127.0.0.1:8670/docs</code></td></tr></tbody></table></div><h2 id="usage">Usage<a class="anchor-link" href="#usage">#</a></h2><h3>Push rows into a dataset</h3><p>Append and replace differ: append adds rows, replace swaps the set. The dataset API key is separate from the admin session.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">curl -s -X POST http://127.0.0.1:8670/api/datasets/$DATASET/data \
+  -H &quot;Authorization: Bearer $DATASET_KEY&quot; -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;data&quot;:[{&quot;label&quot;:&quot;signups&quot;,&quot;value&quot;:42}]}&#x27;</code></pre></div><h2 id="api">API reference<a class="anchor-link" href="#api">#</a></h2><div class="table-wrap"><table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td><span class="method get">GET</span></td><td><code>/health</code></td><td>Status</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/auth/login</code></td><td>Admin session</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/admin/datasets</code></td><td>List datasets</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/admin/datasets</code></td><td>Create a dataset schema</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/datasets/{id}/data</code></td><td>Append rows with the dataset key</td></tr><tr><td><span class="method post">PUT</span></td><td><code>/api/datasets/{id}/data</code></td><td>Replace the row set</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/datasets/{id}/data</code></td><td>Read rows</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/admin/datasets/{id}/export.csv</code></td><td>CSV export</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/admin/dashboards</code></td><td>Create a dashboard of widgets</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/admin/dashboards/{id}/preview</code></td><td>Rendered preview</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/admin/rotations</code></td><td>Create a rotation</td></tr><tr><td><span class="method get">GET</span></td><td><code>/tv/{public_id}</code></td><td>Public TV rotation page</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/admin/credentials/dataset-key/rotate</code></td><td>Rotate the dataset key</td></tr></tbody></table></div><h2 id="monetize">Monetize<a class="anchor-link" href="#monetize">#</a></h2><p>The billing layer is built in. Keys carry a plan, a credit balance and an hourly ceiling, so you can resell access without writing auth code.</p><div class="price-grid"><div class="price"><h4>Self-host</h4><b>$0</b><p>The incumbent charges $79 to $319 a month. Run unlimited dashboards and TVs on your own box.</p></div><div class="price"><h4>Agency walls</h4><b>Your price</b><p>Host per client and give each one a rotation URL.</p></div><div class="price"><h4>Connector pack</h4><b>Add-on</b><p>Build the Shopify/Zendesk connectors that are deliberately missing here.</p></div></div><div class="callout"><b>Ship it publicly:</b> put the service behind Caddy or Nginx with TLS, point a subdomain at it, then hand clients <code>https://api.yourdomain.com/v2</code> and their own key.</div><h2 id="notes">Operational notes<a class="anchor-link" href="#notes">#</a></h2><div class="callout warn"><b>Read before going live.</b> These are the things that break in production.</div><ul><li>Both first-boot credentials are required; nothing is generated and nothing is printed to logs.</li><li>Connectors to Shopify, Zendesk or Aircall are not implemented: you push data yourself.</li><li>The suite refuses to run on a port that is already listening, so it never disturbs a live instance.</li></ul><h2 id="faq">FAQ<a class="anchor-link" href="#faq">#</a></h2><details><summary>Do I need a data source integration?</summary><p>No. You push rows to the dataset API yourself, which is what the paid product&#x27;s custom-dataset feature does.</p></details><details><summary>Can it run on a TV?</summary><p>Yes. A rotation has a public URL and a /tv/ page that cycles the dashboards in it.</p></details>
+    </article>
+  </div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>&copy; Gubbala Venu Gopal</span>
+    <span>Replicas &middot; self-hosted replacements</span>
+    <span class="sp"><a href="https://github.com/venugopal1902/replicas">Source on GitHub</a></span>
+  </div>
+</footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
