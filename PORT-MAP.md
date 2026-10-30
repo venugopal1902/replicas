@@ -21,11 +21,19 @@ port. Do not re-raise a port question that this table already answers.
 
 Suites that spawn their own server bind a throwaway port so they never disturb a live instance:
 
-| Service | Test port | Env var |
+| Service | Env var | Port |
 |---|---|---|
-| bannerbear-engine | 8621 | `BANNERBEAR_TEST_PORT` |
-| zigpoll-engine | 8631 | `ZIGPOLL_TEST_PORT` |
-| geckoboard-engine | 8641 | `GECKOBOARD_TEST_PORT` |
+| back-in-stock | `BACKINSTOCK_TEST_PORT` | OS-assigned |
+| churn-buster | `CHURN_TEST_PORT` | OS-assigned |
+| bannerbear-engine | `BANNERBEAR_TEST_PORT` | OS-assigned |
+| zigpoll-engine | `ZIGPOLL_TEST_PORT` | OS-assigned |
+| baremetrics-engine | `BAREMETRICS_TEST_PORT` | OS-assigned |
+| smile-engine | `SMILE_TEST_PORT` | OS-assigned |
+| geckoboard-engine | `GECKOBOARD_TEST_PORT` | OS-assigned |
+
+"OS-assigned" means the suite asks the operating system for a free port rather than assuming a
+number. Windows can mark a band of ports unbindable (EACCES 10013) even with nothing listening, so
+fixed test ports fail intermittently for reasons that have nothing to do with the service.
 
 A suite must read its port from the env var and must never hard-code a literal port in an assertion.
 A test that pins a stale port passes while the service fights another one for the socket.

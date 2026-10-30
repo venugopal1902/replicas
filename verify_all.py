@@ -14,6 +14,7 @@ import argparse
 import json
 import os
 import re
+import socket
 import subprocess
 import sys
 import time
@@ -116,6 +117,18 @@ def parse_counts(text: str) -> Optional[tuple]:
     return None
 
 
+def free_port() -> int:
+    """Return a port the OS says is bindable right now.
+
+    Test ports were hard-coded (8621, 8631, 8641) until Windows excluded a whole band of them and
+    every suite in it failed with EACCES 10013 while nothing was actually listening. Asking the OS
+    each run removes that failure mode entirely.
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return int(s.getsockname()[1])
+
+
 def health(port: int, timeout: float = 2.0) -> Optional[dict]:
     try:
         with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=timeout) as r:
@@ -139,7 +152,8 @@ def run_checks(svc: Service) -> tuple:
     """Return (passed, total, combined_output)."""
     workdir = ROOT / "services" / svc.slug
     env = os.environ.copy()
-    env.update(svc.env)
+    # any *_TEST_PORT placeholder gets a fresh OS-assigned port instead of a hard-coded one
+    env.update({k: str(free_port()) if k.endswith("_TEST_PORT") else v for k, v in svc.env.items()})
     totals = []
     chunks = []
     for argv in svc.checks:

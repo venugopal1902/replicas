@@ -9,7 +9,23 @@ import sys
 import urllib.error
 import urllib.request
 
-BASE = "http://127.0.0.1:8600"
+import os
+import pathlib
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3] / "tools"))
+from isolated_server import start_isolated  # noqa: E402
+
+# Each run gets its own server, database and port, so these checks do not depend on how many
+# times the suite has run before or on state left behind in the live demo instance.
+# Set BACK_IN_STOCK_LIVE_SUITE=1 to test the long-running instance instead.
+BASE = start_isolated(
+    service_dir=pathlib.Path(__file__).resolve().parents[1],
+    db_env="BACKINSTOCK_DB",
+    test_port=int(os.environ.get("BACKINSTOCK_TEST_PORT", "0")),
+    live_port=8600,
+    admin_password="backinstock123",
+    admin_email="admin@backinstock.local",
+)
 ROWS = []
 SERVER_ERRORS = []
 

@@ -99,6 +99,34 @@ uv run python tests/test_engine.py     # level 2a: 52 API checks
 uv run python tests/test_features.py   # level 2b: 13 live feature groups
 ```
 
+### Test isolation
+
+Suites must not depend on how many times they have run before. Four of them used to assert against
+the long-running instance and wrote into its live database, so they accumulated state and eventually
+failed for reasons unrelated to the code — mail-engine's e2e check passed when written, then went
+permanently red once the shared mailbox burned its daily send quota.
+
+Those suites now boot their own server on an OS-assigned port with a temporary database:
+
+```python
+BASE = start_isolated(
+    service_dir=pathlib.Path(__file__).resolve().parents[1],
+    db_env="SMILE_DB",
+    test_port=int(os.environ.get("SMILE_TEST_PORT", "0")),   # 0 = let the OS choose
+    live_port=8660,
+    admin_password="smile123",
+    admin_email="admin@smile.local",
+)
+```
+
+The harness lives in `tools/isolated_server.py`. Set `<SERVICE>_LIVE_SUITE=1` to point a suite back
+at the running instance for debugging. Two rules that came out of this:
+
+- **Never hard-code a test port.** Windows can exclude a whole port band (Hyper-V, WSL, Docker) so a
+  free-looking number fails to bind with EACCES 10013 while nothing is listening on it. Ask the OS.
+- **Kill the process tree, not the wrapper.** `uv run` is a launcher; terminating it orphans the real
+  server, which then holds the port and breaks the next run.
+
 ### Verify all ten services at once
 
 ```bash
