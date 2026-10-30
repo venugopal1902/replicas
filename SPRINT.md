@@ -26,7 +26,7 @@ Build order is top-down. Do not start a lower row while a higher row is TODO.
 | 2 | churn-buster | Churn Buster | $269+/mo | M | DONE | 21 | Dunning campaigns, Stripe-shaped webhook, recovery analytics, admin console, CSV. Port 8610 |
 | 3 | bannerbear-engine | Bannerbear | $49-299/mo | M | DONE | 15 pytest + E2E | Templates, async PNG renders, project keys, credit metering with 402 on empty. Port 8620. Built by hermes, verified + documented by chief |
 | 4 | zigpoll-engine | Zigpoll | $29+ UNVERIFIED | M | DONE | 21 | Four question types, public id split from admin auth, HMAC webhooks, HTTPS-only destinations. Port 8630. Built by hermes, verified by chief |
-| 5 | geckoboard-engine | Geckoboard | $79/319/mo | M | TODO | 0 | Custom datasets push API, widget composition, TV rotation mode. Port 8640 |
+| 5 | geckoboard-engine | Geckoboard | $79/319/mo | M | TODO | 0 | Custom datasets push API, widget composition, TV rotation mode. Port 8670 (8640 taken by mail-engine) |
 | 6 | baremetrics-engine | Baremetrics | UNVERIFIED | M/L | TODO | 0 | MRR/ARR metrics from Stripe, churn, forecasting. Port 8650 |
 | 7 | smile-engine | Smile.io | $15/79/199/mo | L | TODO | 0 | Points ledger, referrals, VIP tiers. Defer: ledger correctness + fraud controls. Port 8660 |
 
@@ -34,7 +34,7 @@ Infrastructure primitives, not replacements. Build only if a ranked row needs th
 
 | Service | Note | Status |
 |---|---|---|
-| mail-engine | SMTP send + sequence engine. Reusable by back-in-stock and churn-buster. Not a product on its own. | BUILDING |
+| mail-engine | SMTP send + sequence engine. Reusable by back-in-stock and churn-buster. Built as a full product surface anyway: campaigns, sequences, mailboxes, warmup, inbox, tracking, MCP. | DONE — 24 unit + 18 live + 15 UI = 57, port 8640 |
 | schedule-engine | Calendly-shaped availability + ICS. No clear paid-tier moat. | TODO |
 | meeting-engine | Transcript + action items. Keep as candidate. | TODO |
 | tts-engine | Voice synthesis via provider keys. | TODO |
@@ -86,6 +86,9 @@ Record the literal numbers. A check that was not executed is not a pass.
 
 Newest first. One line per tick: `HH:MM | action | evidence`
 
+- T+02:00 | mail-engine FINISHED AND VERIFIED, infrastructure row BUILDING -> DONE, port 8640 (geckoboard moved to 8670) | routes/main/scripts/README/tests written, then executed: 24/24 unit, 18/18 live API (blocked-suppression path blocked=1, tracking pixel opened, e2e enroll->send->step advance, openapi 35 paths/47 ops, 0 5xx), 15/15 headless-Chrome UI (login, bad password, dashboard, campaign preview, leads search, inbox, mailboxes, settings, 0 JS exceptions). DB reseeded clean: 4 campaigns, 42 leads, 40 sends, health 200 on :8640
+- T+01:55 | fixed 2 test bugs found by the first run, not backend bugs | unauth check used the logged-in cookie jar (200 -> 401 with a clean client); blocked-path check suppressed the lead before enrolling so the send-time block was never exercised (now blocked=1)
+
 - T+01:40 | zigpoll-engine VERIFIED AND PUBLISHED, row 4 TODO -> DONE | 21/21 on :8630 and 21/21 on override :8631; page 200; commit 68d09a1. Fixed 2 suite bugs (unreachable port override, hard-coded port assertion). Built by hermes, verified by chief
 - T+01:36 | full portfolio re-verified in one pass, all six live | blotato 52+13, lead 50/50, back-in-stock 20/20, churn-buster 21/21, bannerbear 15, zigpoll 21 = 192 checks
 - T+01:30 | bannerbear-engine VERIFIED AND PUBLISHED, row 3 TODO -> DONE | 15 pytest + independent E2E PNG 1080x1350 at 26089B, credit 5 -> 4; commits 11e4401, policy fix ab242f4, 68d09a1
@@ -105,5 +108,9 @@ Newest first. One line per tick: `HH:MM | action | evidence`
 
 ## Resume state (read this before building)
 
-mail-engine, partial. Existing: .python-version, pyproject.toml, docs/api-contract.md, mail_engine/{__init__,config,auth,database,models,render}.py
-Missing: routes, main.py, seed script, tests, README. Files frozen at 03:53. Do not restart from scratch - finish it, then run 12 checks.
+mail-engine is finished and verified on :8640 (see ledger T+02:00). Nothing is half-built.
+Next ranked row is 5 geckoboard-engine on :8670; rows 1-4 and the infra rows are DONE.
+Known loose end: services/mail-engine/.tmp-chrome cannot be deleted while 8 headless chrome
+children hold file locks. It is gitignored, costs disk only, and is safe to leave.
+Every tick: verify the row above you is DONE before starting a new service, and record literal
+check counts - a subagent claim is not evidence.

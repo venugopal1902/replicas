@@ -62,7 +62,7 @@ def state():
     occupied = probe.connect_ex(("127.0.0.1", TEST_PORT)) == 0
     probe.close()
     if occupied:
-        raise RuntimeError("Port 8630 is occupied; refusing to touch or stop an existing service")
+        raise RuntimeError(f"Port {TEST_PORT} is occupied; refusing to touch or stop an existing service")
 
     env = os.environ.copy()
     env.update({
@@ -90,7 +90,7 @@ def state():
                 if response.json().get("version") != TEST_VERSION:
                     process.terminate()
                     process.wait(timeout=5)
-                    raise RuntimeError("Port 8630 answered with a different service; refusing to test it")
+                    raise RuntimeError(f"Port {TEST_PORT} answered with a different service; refusing to test it")
                 responses.append(("GET", "/health", response.status_code))
                 break
         except httpx.HTTPError:
@@ -99,7 +99,7 @@ def state():
     else:
         process.terminate()
         process.wait(timeout=5)
-        raise RuntimeError("Test-owned Zigpoll server did not become healthy on port 8630")
+        raise RuntimeError(f"Test-owned Zigpoll server did not become healthy on port {TEST_PORT}")
 
     data = SafeState({"client": client, "process": process, "responses": responses,
                       "admin_token": None, "survey": None, "webhook_secret": None, "response_id": None})
