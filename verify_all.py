@@ -183,12 +183,36 @@ def main() -> int:
     ap.add_argument("--keep", action="store_true", help="leave services this run started")
     ap.add_argument("--skip-start", action="store_true", help="do not start missing services")
     ap.add_argument("--verbose", action="store_true", help="print raw suite output on failure")
+    ap.add_argument("--start-only", action="store_true",
+                    help="boot every service and wait for health; run no suites")
     args = ap.parse_args()
 
     selected = [s for s in SERVICES if not args.only or s.slug in args.only]
     if not selected:
         print("no matching services")
         return 2
+
+    if args.start_only:
+        launched = []
+        for svc in selected:
+            if health(svc.port):
+                print(f"  {svc.slug:22s} :{svc.port} already up")
+                continue
+            env = os.environ.copy()
+            env.update(DEMO_ENV.get(svc.slug, {}))
+            env.setdefault("PORT", str(svc.port))
+            proc = subprocess.Popen(
+                ["uv", "run", "python", "scripts/run_server.py"],
+                cwd=ROOT / "services" / svc.slug, env=env,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                creationflags=getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0),
+            )
+            ok = wait_up(svc.port)
+            print(f"  {svc.slug:22s} :{svc.port} {'up' if ok else 'FAILED'}")
+            if ok:
+                launched.append(proc)
+        print(f"\n{len(launched)} service(s) started; they stay running after this command exits")
+        return 0 if all(health(s.port) for s in selected) else 1
 
     results = []
     started: List[tuple] = []

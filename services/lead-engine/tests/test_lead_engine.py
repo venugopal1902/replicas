@@ -2,7 +2,26 @@
 import time
 import httpx
 
-BASE = "http://localhost:8500"
+import os
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3] / "tools"))
+from isolated_server import start_isolated  # noqa: E402
+
+# Runs against a private instance with a throwaway database. This suite used to POST into the live
+# workspace, which left duplicate folders and stray contacts behind after every run.
+# Set LEAD_ENGINE_LIVE_SUITE=1 to point it at the long-running instance instead.
+BASE = start_isolated(
+    service_dir=pathlib.Path(__file__).resolve().parents[1],
+    db_env="DATABASE_URL",
+    db_url_prefix="sqlite+aiosqlite:///",
+    test_port=int(os.environ.get("LEAD_ENGINE_TEST_PORT", "0")),
+    live_port=8500,
+    admin_password="leadengine123",
+    admin_email="admin@leadengine.local",
+    extra_env=None,
+)
 ROWS = []
 
 

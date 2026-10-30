@@ -16,6 +16,6 @@ if __name__ == "__main__":
     print(f"API:          http://localhost:{settings.PORT}/api")
     print(f"MCP:          http://localhost:{settings.PORT}/mcp")
     print(f"Swagger:      http://localhost:{settings.PORT}/docs")
-    print(f"Login:        {settings.ADMIN_EMAIL} / {settings.ADMIN_PASSWORD}")
+    print(f"Login:        {settings.ADMIN_EMAIL} / <password: ADMIN_PASSWORD env or .env>")
     print("=" * 62 + "\n")
     uvicorn.run("lead_engine.main:app", host=settings.HOST, port=settings.PORT, reload=False)

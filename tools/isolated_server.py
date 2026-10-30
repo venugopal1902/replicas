@@ -58,6 +58,7 @@ def start_isolated(
     service_dir: Path,
     db_env: str,
     test_port: int = 0,
+    db_url_prefix: str = "",
     live_port: int,
     admin_password: str,
     admin_email: str | None = None,
@@ -82,10 +83,14 @@ def start_isolated(
     if not test_port:
         test_port = _free_port()
 
+    # Some engines take a bare path (SMILE_DB=/x/y.db); others take a full SQLAlchemy URL
+    # (DATABASE_URL=sqlite+aiosqlite:////x/y.db). db_url_prefix covers the second shape.
+    db_value = f"{db_url_prefix}{db_path}" if db_url_prefix else str(db_path)
+
     env = os.environ.copy()
     env.update({
         "PORT": str(test_port),
-        db_env: str(db_path),
+        db_env: db_value,
         "ADMIN_PASSWORD": admin_password,
     })
     if admin_email:
