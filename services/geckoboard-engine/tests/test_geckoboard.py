@@ -49,7 +49,12 @@ class Service:
             "day": {"type": "date", "name": "Day", "optional": False},
             "team": {"type": "string", "name": "Team", "optional": False},
             "tickets": {"type": "number", "name": "Tickets", "optional": False},
-            "revenue": {"type": "money", "name": "Revenue", "currency_code": "USD", "optional": True},
+            "revenue": {
+                "type": "money",
+                "name": "Revenue",
+                "currency_code": "USD",
+                "optional": True,
+            },
         }
         response = self.request(
             "post",
@@ -100,7 +105,17 @@ def service() -> Service:
     )
     server_log = (TEST_DIR / "server.log").open("w", encoding="utf-8")
     process = subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "geckoboard_engine.main:app", "--host", "127.0.0.1", "--port", str(TEST_PORT), "--no-access-log"],
+        [
+            sys.executable,
+            "-m",
+            "uvicorn",
+            "geckoboard_engine.main:app",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(TEST_PORT),
+            "--no-access-log",
+        ],
         cwd=ROOT,
         env=env,
         stdin=subprocess.DEVNULL,
@@ -126,7 +141,9 @@ def service() -> Service:
         process.wait(timeout=5)
         client.close()
         server_log.close()
-        pytest.fail(f"Geckoboard test server did not become ready on GECKOBOARD_TEST_PORT {TEST_PORT}")
+        pytest.fail(
+            f"Geckoboard test server did not become ready on GECKOBOARD_TEST_PORT {TEST_PORT}"
+        )
 
     svc = Service(client, admin_password, dataset_key, env, process)
     login = svc.request(
@@ -306,9 +323,30 @@ def test_14_dashboard_composes_distinct_widgets(service: Service) -> None:
     body = {
         "name": "Operations",
         "widgets": [
-            {"id": "ticket-total", "type": "number", "title": "Tickets", "dataset_id": dataset_id, "metric_field": "tickets", "aggregate": "sum"},
-            {"id": "tickets-by-team", "type": "bar", "title": "By team", "dataset_id": dataset_id, "metric_field": "tickets", "dimension_field": "team", "aggregate": "sum"},
-            {"id": "ticket-table", "type": "table", "title": "Raw rows", "dataset_id": dataset_id, "limit": 10},
+            {
+                "id": "ticket-total",
+                "type": "number",
+                "title": "Tickets",
+                "dataset_id": dataset_id,
+                "metric_field": "tickets",
+                "aggregate": "sum",
+            },
+            {
+                "id": "tickets-by-team",
+                "type": "bar",
+                "title": "By team",
+                "dataset_id": dataset_id,
+                "metric_field": "tickets",
+                "dimension_field": "team",
+                "aggregate": "sum",
+            },
+            {
+                "id": "ticket-table",
+                "type": "table",
+                "title": "Raw rows",
+                "dataset_id": dataset_id,
+                "limit": 10,
+            },
         ],
     }
     response = service.request("post", "/api/admin/dashboards", json=body)
@@ -326,8 +364,23 @@ def test_15_dashboard_preview_aggregates_match_records(service: Service) -> None
         json={
             "name": "KPI preview",
             "widgets": [
-                {"id": "sum", "type": "number", "title": "All tickets", "dataset_id": dataset_id, "metric_field": "tickets", "aggregate": "sum"},
-                {"id": "group", "type": "leaderboard", "title": "Tickets by team", "dataset_id": dataset_id, "metric_field": "tickets", "dimension_field": "team", "aggregate": "sum"},
+                {
+                    "id": "sum",
+                    "type": "number",
+                    "title": "All tickets",
+                    "dataset_id": dataset_id,
+                    "metric_field": "tickets",
+                    "aggregate": "sum",
+                },
+                {
+                    "id": "group",
+                    "type": "leaderboard",
+                    "title": "Tickets by team",
+                    "dataset_id": dataset_id,
+                    "metric_field": "tickets",
+                    "dimension_field": "team",
+                    "aggregate": "sum",
+                },
             ],
         },
     )
@@ -349,7 +402,14 @@ def test_16_time_series_requires_datetime_or_date_field(service: Service) -> Non
         json={
             "name": "Invalid line",
             "widgets": [
-                {"id": "bad-line", "type": "line", "title": "Bad", "dataset_id": dataset_id, "metric_field": "tickets", "time_field": "team"}
+                {
+                    "id": "bad-line",
+                    "type": "line",
+                    "title": "Bad",
+                    "dataset_id": dataset_id,
+                    "metric_field": "tickets",
+                    "time_field": "team",
+                }
             ],
         },
     )
@@ -358,12 +418,27 @@ def test_16_time_series_requires_datetime_or_date_field(service: Service) -> Non
 
 def test_17_dashboard_update_and_list(service: Service) -> None:
     dataset_id, _ = service.make_dataset("dashboard-crud")
-    created = service.request("post", "/api/admin/dashboards", json={"name": "Initial", "widgets": []})
+    created = service.request(
+        "post", "/api/admin/dashboards", json={"name": "Initial", "widgets": []}
+    )
     assert created.status_code == 201
     dashboard_id = created.json()["id"]
-    updated = service.request("put", f"/api/admin/dashboards/{dashboard_id}", json={"name": "Updated", "widgets": [
-        {"id": "count", "type": "number", "title": "Count", "dataset_id": dataset_id, "aggregate": "count"}
-    ]})
+    updated = service.request(
+        "put",
+        f"/api/admin/dashboards/{dashboard_id}",
+        json={
+            "name": "Updated",
+            "widgets": [
+                {
+                    "id": "count",
+                    "type": "number",
+                    "title": "Count",
+                    "dataset_id": dataset_id,
+                    "aggregate": "count",
+                }
+            ],
+        },
+    )
     assert updated.status_code == 200
     assert updated.json()["name"] == "Updated"
     listed = service.request("get", "/api/admin/dashboards")
@@ -375,15 +450,35 @@ def test_18_public_rotation_has_tv_data_without_admin_auth(service: Service) -> 
     assert service.push("post", dataset_id, _sample_records()).status_code == 200
     dashboards = []
     for name in ("North wall", "South wall"):
-        response = service.request("post", "/api/admin/dashboards", json={
-            "name": name,
-            "widgets": [{"id": "tickets", "type": "number", "title": "Tickets", "dataset_id": dataset_id, "metric_field": "tickets", "aggregate": "sum"}],
-        })
+        response = service.request(
+            "post",
+            "/api/admin/dashboards",
+            json={
+                "name": name,
+                "widgets": [
+                    {
+                        "id": "tickets",
+                        "type": "number",
+                        "title": "Tickets",
+                        "dataset_id": dataset_id,
+                        "metric_field": "tickets",
+                        "aggregate": "sum",
+                    }
+                ],
+            },
+        )
         assert response.status_code == 201
         dashboards.append(response.json()["id"])
-    rotation = service.request("post", "/api/admin/rotations", json={
-        "name": "Office screens", "dashboard_ids": dashboards, "interval_seconds": 20, "active": True,
-    })
+    rotation = service.request(
+        "post",
+        "/api/admin/rotations",
+        json={
+            "name": "Office screens",
+            "dashboard_ids": dashboards,
+            "interval_seconds": 20,
+            "active": True,
+        },
+    )
     assert rotation.status_code == 201
     public_id = rotation.json()["public_id"]
     with service.fresh_client() as client:
@@ -398,11 +493,20 @@ def test_18_public_rotation_has_tv_data_without_admin_auth(service: Service) -> 
 
 
 def test_19_rotation_crud_and_inactive_rotation_is_hidden(service: Service) -> None:
-    dashboard = service.request("post", "/api/admin/dashboards", json={"name": "Empty display", "widgets": []})
+    dashboard = service.request(
+        "post", "/api/admin/dashboards", json={"name": "Empty display", "widgets": []}
+    )
     assert dashboard.status_code == 201
-    rotation = service.request("post", "/api/admin/rotations", json={
-        "name": "Disabled", "dashboard_ids": [dashboard.json()["id"]], "interval_seconds": 30, "active": True,
-    })
+    rotation = service.request(
+        "post",
+        "/api/admin/rotations",
+        json={
+            "name": "Disabled",
+            "dashboard_ids": [dashboard.json()["id"]],
+            "interval_seconds": 30,
+            "active": True,
+        },
+    )
     assert rotation.status_code == 201
     rotation_id = rotation.json()["id"]
     public_id = rotation.json()["public_id"]
@@ -439,7 +543,9 @@ def test_21_seed_script_creates_two_datasets_and_dashboards(service: Service) ->
         timeout=30,
         check=False,
     )
-    assert completed.returncode == 0, completed.stderr.replace(service.admin_password, "[REDACTED]").replace(service.dataset_key, "[REDACTED]")
+    assert completed.returncode == 0, completed.stderr.replace(
+        service.admin_password, "[REDACTED]"
+    ).replace(service.dataset_key, "[REDACTED]")
     assert "2 datasets" in completed.stdout
     datasets = service.request("get", "/api/admin/datasets")
     dashboards = service.request("get", "/api/admin/dashboards")
@@ -449,7 +555,9 @@ def test_21_seed_script_creates_two_datasets_and_dashboards(service: Service) ->
     assert service.dataset_key not in completed.stdout + completed.stderr
 
 
-def test_22_first_boot_fails_without_admin_password_and_does_not_echo_secrets(service: Service) -> None:
+def test_22_first_boot_fails_without_admin_password_and_does_not_echo_secrets(
+    service: Service,
+) -> None:
     isolated = TEST_DIR / "missing-admin.db"
     env = service.env.copy()
     env["GECKOBOARD_DB_PATH"] = isolated.as_posix()
@@ -493,7 +601,11 @@ def test_24_existing_database_starts_without_admin_password(service: Service) ->
     env = service.env.copy()
     env.pop("GECKOBOARD_ADMIN_PASSWORD", None)
     run = subprocess.run(
-        [sys.executable, "-c", "from geckoboard_engine.database import init_db; init_db(); print('EXISTING_DB_OK')"],
+        [
+            sys.executable,
+            "-c",
+            "from geckoboard_engine.database import init_db; init_db(); print('EXISTING_DB_OK')",
+        ],
         cwd=ROOT,
         env=env,
         capture_output=True,
@@ -516,30 +628,44 @@ def test_25_admin_ui_is_local_only_and_has_no_external_assets(service: Service) 
 
 
 def test_26_malformed_dataset_field_type_returns_validation_error(service: Service) -> None:
-    response = service.request("post", "/api/admin/datasets", json={
-        "id": "acceptance.malformed-field",
-        "fields": {"value": {"type": {"bad": "type"}, "name": "Value", "optional": False}},
-    })
+    response = service.request(
+        "post",
+        "/api/admin/datasets",
+        json={
+            "id": "acceptance.malformed-field",
+            "fields": {"value": {"type": {"bad": "type"}, "name": "Value", "optional": False}},
+        },
+    )
     assert response.status_code == 422
 
 
 def test_27_malformed_widget_type_returns_validation_error(service: Service) -> None:
-    response = service.request("post", "/api/admin/dashboards", json={
-        "name": "Malformed widget",
-        "widgets": [{"id": "bad", "type": {"bad": "type"}, "dataset_id": "support.tickets"}],
-    })
+    response = service.request(
+        "post",
+        "/api/admin/dashboards",
+        json={
+            "name": "Malformed widget",
+            "widgets": [{"id": "bad", "type": {"bad": "type"}, "dataset_id": "support.tickets"}],
+        },
+    )
     assert response.status_code == 422
 
 
 def test_28_rotation_active_requires_a_boolean(service: Service) -> None:
-    dashboard = service.request("post", "/api/admin/dashboards", json={"name": "Rotate", "widgets": []})
+    dashboard = service.request(
+        "post", "/api/admin/dashboards", json={"name": "Rotate", "widgets": []}
+    )
     assert dashboard.status_code == 201
-    response = service.request("post", "/api/admin/rotations", json={
-        "name": "Typed state",
-        "dashboard_ids": [dashboard.json()["id"]],
-        "interval_seconds": 30,
-        "active": "false",
-    })
+    response = service.request(
+        "post",
+        "/api/admin/rotations",
+        json={
+            "name": "Typed state",
+            "dashboard_ids": [dashboard.json()["id"]],
+            "interval_seconds": 30,
+            "active": "false",
+        },
+    )
     assert response.status_code == 422
 
 
@@ -567,4 +693,3 @@ def test_large_request_body_is_rejected(service: Service) -> None:
 
 def test_30_all_acceptance_requests_avoided_http_5xx(service: Service) -> None:
     assert not [code for code in service.seen_statuses if code >= 500]
-

@@ -82,7 +82,12 @@ def init_db() -> None:
                 )
             conn.execute(
                 "INSERT INTO admin_users (id,email,display_name,password_hash,created_at) VALUES (1,?,?,?,?)",
-                (settings.admin_email, settings.admin_name, hash_password(settings.admin_password), now()),
+                (
+                    settings.admin_email,
+                    settings.admin_name,
+                    hash_password(settings.admin_password),
+                    now(),
+                ),
             )
         if key_row is None:
             if not settings.dataset_api_key:
@@ -97,11 +102,19 @@ def init_db() -> None:
             seed_demo(conn)
 
 
-def _insert_dataset(conn: sqlite3.Connection, dataset_id: str, fields: dict[str, Any], unique_by: list[str]) -> None:
+def _insert_dataset(
+    conn: sqlite3.Connection, dataset_id: str, fields: dict[str, Any], unique_by: list[str]
+) -> None:
     stamp = now()
     conn.execute(
         "INSERT OR IGNORE INTO datasets (id,fields_json,unique_by_json,created_at,updated_at) VALUES (?,?,?,?,?)",
-        (dataset_id, json.dumps(fields, separators=(",", ":")), json.dumps(unique_by), stamp, stamp),
+        (
+            dataset_id,
+            json.dumps(fields, separators=(",", ":")),
+            json.dumps(unique_by),
+            stamp,
+            stamp,
+        ),
     )
 
 
@@ -109,7 +122,11 @@ def _insert_records(
     conn: sqlite3.Connection, dataset_id: str, records: list[dict[str, Any]], unique_by: list[str]
 ) -> None:
     for record in records:
-        unique_key = json.dumps([record.get(key) for key in unique_by], separators=(",", ":")) if unique_by else None
+        unique_key = (
+            json.dumps([record.get(key) for key in unique_by], separators=(",", ":"))
+            if unique_by
+            else None
+        )
         stamp = now()
         if unique_key is None:
             conn.execute(
@@ -141,29 +158,91 @@ def seed_demo(conn: sqlite3.Connection | None = None) -> None:
     }
     _insert_dataset(conn, "support.tickets", support_fields, ["date", "team"])
     _insert_dataset(conn, "sales.daily", sales_fields, ["date"])
-    _insert_records(conn, "support.tickets", [
-        {"date": "2026-05-18", "team": "North", "open_tickets": 24},
-        {"date": "2026-05-18", "team": "South", "open_tickets": 17},
-        {"date": "2026-05-19", "team": "North", "open_tickets": 21},
-        {"date": "2026-05-19", "team": "South", "open_tickets": 14},
-    ], ["date", "team"])
-    _insert_records(conn, "sales.daily", [
-        {"date": "2026-05-18", "revenue": 12450.0, "orders": 91},
-        {"date": "2026-05-19", "revenue": 14820.5, "orders": 106},
-        {"date": "2026-05-20", "revenue": 13770.25, "orders": 98},
-    ], ["date"])
+    _insert_records(
+        conn,
+        "support.tickets",
+        [
+            {"date": "2026-05-18", "team": "North", "open_tickets": 24},
+            {"date": "2026-05-18", "team": "South", "open_tickets": 17},
+            {"date": "2026-05-19", "team": "North", "open_tickets": 21},
+            {"date": "2026-05-19", "team": "South", "open_tickets": 14},
+        ],
+        ["date", "team"],
+    )
+    _insert_records(
+        conn,
+        "sales.daily",
+        [
+            {"date": "2026-05-18", "revenue": 12450.0, "orders": 91},
+            {"date": "2026-05-19", "revenue": 14820.5, "orders": 106},
+            {"date": "2026-05-20", "revenue": 13770.25, "orders": 98},
+        ],
+        ["date"],
+    )
     stamp = now()
     dashboards = [
-        ("support-dashboard", "Support pulse", [
-            {"id": "ticket-total", "type": "number", "title": "Open tickets", "dataset_id": "support.tickets", "metric_field": "open_tickets", "aggregate": "sum"},
-            {"id": "ticket-trend", "type": "line", "title": "Ticket trend", "dataset_id": "support.tickets", "metric_field": "open_tickets", "time_field": "date", "aggregate": "sum"},
-            {"id": "team-leaderboard", "type": "leaderboard", "title": "By team", "dataset_id": "support.tickets", "metric_field": "open_tickets", "dimension_field": "team", "aggregate": "sum"},
-        ]),
-        ("sales-dashboard", "Revenue pulse", [
-            {"id": "revenue-total", "type": "number", "title": "Revenue", "dataset_id": "sales.daily", "metric_field": "revenue", "aggregate": "sum"},
-            {"id": "orders-by-day", "type": "column", "title": "Orders by day", "dataset_id": "sales.daily", "metric_field": "orders", "dimension_field": "date", "aggregate": "sum"},
-            {"id": "sales-table", "type": "table", "title": "Daily records", "dataset_id": "sales.daily", "limit": 8},
-        ]),
+        (
+            "support-dashboard",
+            "Support pulse",
+            [
+                {
+                    "id": "ticket-total",
+                    "type": "number",
+                    "title": "Open tickets",
+                    "dataset_id": "support.tickets",
+                    "metric_field": "open_tickets",
+                    "aggregate": "sum",
+                },
+                {
+                    "id": "ticket-trend",
+                    "type": "line",
+                    "title": "Ticket trend",
+                    "dataset_id": "support.tickets",
+                    "metric_field": "open_tickets",
+                    "time_field": "date",
+                    "aggregate": "sum",
+                },
+                {
+                    "id": "team-leaderboard",
+                    "type": "leaderboard",
+                    "title": "By team",
+                    "dataset_id": "support.tickets",
+                    "metric_field": "open_tickets",
+                    "dimension_field": "team",
+                    "aggregate": "sum",
+                },
+            ],
+        ),
+        (
+            "sales-dashboard",
+            "Revenue pulse",
+            [
+                {
+                    "id": "revenue-total",
+                    "type": "number",
+                    "title": "Revenue",
+                    "dataset_id": "sales.daily",
+                    "metric_field": "revenue",
+                    "aggregate": "sum",
+                },
+                {
+                    "id": "orders-by-day",
+                    "type": "column",
+                    "title": "Orders by day",
+                    "dataset_id": "sales.daily",
+                    "metric_field": "orders",
+                    "dimension_field": "date",
+                    "aggregate": "sum",
+                },
+                {
+                    "id": "sales-table",
+                    "type": "table",
+                    "title": "Daily records",
+                    "dataset_id": "sales.daily",
+                    "limit": 8,
+                },
+            ],
+        ),
     ]
     for dashboard_id, name, widgets in dashboards:
         conn.execute(
@@ -173,5 +252,14 @@ def seed_demo(conn: sqlite3.Connection | None = None) -> None:
     if not conn.execute("SELECT id FROM rotations WHERE name='Demo screen loop'").fetchone():
         conn.execute(
             "INSERT INTO rotations (id,public_id,name,dashboard_ids_json,interval_seconds,active,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)",
-            ("demo-rotation", secrets.token_urlsafe(12), "Demo screen loop", json.dumps(["support-dashboard", "sales-dashboard"]), 20, 1, stamp, stamp),
+            (
+                "demo-rotation",
+                secrets.token_urlsafe(12),
+                "Demo screen loop",
+                json.dumps(["support-dashboard", "sales-dashboard"]),
+                20,
+                1,
+                stamp,
+                stamp,
+            ),
         )

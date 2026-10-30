@@ -1821,6 +1821,213 @@
         "intro": "Console at / on port 8640.",
         "images": []
       }
+    },
+    {
+      "slug": "baremetrics-engine",
+      "name": "Baremetrics Engine",
+      "replaces": "Baremetrics",
+      "replaces_url": "https://baremetrics.com/",
+      "tagline": "MRR, churn and MRR movement computed from subscription rows, not estimated.",
+      "status": "stable",
+      "version": "0.1.0",
+      "language": "Python 3.12",
+      "license": "MIT",
+      "repo_path": "services/baremetrics-engine",
+      "stack": [
+        "FastAPI",
+        "SQLite",
+        "Uvicorn",
+        "Vanilla JS console"
+      ],
+      "platforms": [],
+      "summary": "Baremetrics computes SaaS metrics from your billing provider. This engine computes the same headline numbers from subscription rows instead of estimating them: MRR and ARR as of a date, active count, ARPU, new and churned MRR over a 30-day window, net new MRR, revenue churn rate and quick ratio, plus a daily MRR series. Ingest is Stripe-shaped so a real webhook can point at it, and the test suite recomputes every headline metric independently from the raw rows so a wrong formula cannot pass.",
+      "highlights": [
+        "22/22 checks passing, metrics recomputed independently",
+        "Cancelled-today exits today's MRR, the classic overstatement bug",
+        "Daily MRR series for the last N days",
+        "Stripe-shaped webhook ingest",
+        "Idempotent cancellation",
+        "No baked password: startup fails with setup instructions"
+      ],
+      "features": [
+        {
+          "title": "Metrics",
+          "body": "MRR, ARR, active count, ARPU, new and churned MRR, net new, churn rate, quick ratio."
+        },
+        {
+          "title": "As-of dates",
+          "body": "Every metric can be asked for a past date, and the MRR series walks day by day."
+        },
+        {
+          "title": "Ingest",
+          "body": "Stripe-shaped subscription created/deleted events, plus a local API to add and cancel."
+        },
+        {
+          "title": "Console",
+          "body": "Headline tiles plus a 30-day MRR bar chart rendered from the series endpoint."
+        },
+        {
+          "title": "Proof over prose",
+          "body": "Tests recompute MRR, ARR, ARPU, new and churned MRR from raw rows and compare."
+        }
+      ],
+      "prereqs": [
+        "Python 3.11 or newer",
+        "uv (Astral)",
+        "ADMIN_PASSWORD set before first start"
+      ],
+      "install": [
+        {
+          "title": "Clone",
+          "desc": "Get the source.",
+          "lang": "bash",
+          "code": "git clone https://github.com/venugopal1902/replicas.git\ncd replicas/services/baremetrics-engine"
+        },
+        {
+          "title": "Install",
+          "desc": "Create the environment.",
+          "lang": "bash",
+          "code": "uv sync"
+        },
+        {
+          "title": "Set the admin password",
+          "desc": "Required on first start.",
+          "lang": "bash",
+          "code": "export ADMIN_PASSWORD='choose-a-long-unique-password'"
+        },
+        {
+          "title": "Run",
+          "desc": "Console on port 8650.",
+          "lang": "bash",
+          "code": "uv run python scripts/run_server.py"
+        }
+      ],
+      "urls": [
+        {
+          "label": "Console",
+          "value": "http://127.0.0.1:8650/"
+        },
+        {
+          "label": "Health",
+          "value": "http://127.0.0.1:8650/health"
+        },
+        {
+          "label": "Metrics summary",
+          "value": "http://127.0.0.1:8650/api/metrics/summary"
+        },
+        {
+          "label": "OpenAPI docs",
+          "value": "http://127.0.0.1:8650/docs"
+        }
+      ],
+      "usage": [
+        {
+          "title": "Ask for metrics as of a past date",
+          "desc": "Every headline number accepts as_of, so a board deck can quote any month end.",
+          "code": "TOKEN=$(curl -s -X POST http://127.0.0.1:8650/api/auth/login \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"email\":\"admin@baremetrics.local\",\"password\":\"your-password\"}' | jq -r .token)\n\ncurl -s -H \"Authorization: Bearer $TOKEN\" \\\n  'http://127.0.0.1:8650/api/metrics/summary?as_of=2026-09-30' | jq '{mrrCents,arrCents,churnRatePct}'",
+          "lang": "bash"
+        },
+        {
+          "title": "Feed it a Stripe-shaped event",
+          "desc": "Point a real webhook here, or simulate one.",
+          "code": "curl -s -X POST http://127.0.0.1:8650/webhooks/stripe \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"type\":\"customer.subscription.created\",\"data\":{\"object\":{\"customer_email\":\"new@example.com\",\"amount\":4900,\"plan\":\"growth\"}}}'",
+          "lang": "bash"
+        }
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/health",
+          "desc": "Status, subscription count, current MRR"
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/login",
+          "desc": "Admin token"
+        },
+        {
+          "method": "GET",
+          "path": "/api/metrics/summary",
+          "desc": "All headline metrics, optional as_of"
+        },
+        {
+          "method": "GET",
+          "path": "/api/metrics/mrr-series",
+          "desc": "Daily MRR and active count"
+        },
+        {
+          "method": "GET",
+          "path": "/api/customers",
+          "desc": "Customers joined to their subscription"
+        },
+        {
+          "method": "GET",
+          "path": "/api/subscriptions",
+          "desc": "Subscriptions, optional status filter"
+        },
+        {
+          "method": "POST",
+          "path": "/api/subscriptions",
+          "desc": "Add a subscription"
+        },
+        {
+          "method": "POST",
+          "path": "/api/subscriptions/{id}/cancel",
+          "desc": "Cancel, idempotent"
+        },
+        {
+          "method": "GET",
+          "path": "/api/report.csv",
+          "desc": "CSV of every subscription"
+        },
+        {
+          "method": "POST",
+          "path": "/webhooks/stripe",
+          "desc": "Stripe-shaped ingest"
+        }
+      ],
+      "mcp_tools": [],
+      "verify": {
+        "title": "Run the suite with the server up",
+        "code": "cd services/baremetrics-engine\nuv run python tests/test_baremetrics.py\n\n# recorded: ===== 22/22 checks passed ====="
+      },
+      "notes": [
+        "Baremetrics pricing was UNVERIFIED in our research pass, so no price ladder is claimed.",
+        "Churn is revenue churn, not logo churn. No per-plan or cohort views.",
+        "Webhook ingest trusts its payload. Put it behind your own signature check before exposing it.",
+        "Metrics are computed on read; at scale you would materialise daily snapshots."
+      ],
+      "faq": [
+        {
+          "q": "Does it connect to Stripe directly?",
+          "a": "No. It accepts Stripe-shaped webhooks. Point your Stripe endpoint here, or use the local API."
+        },
+        {
+          "q": "Why does a cancellation affect today's MRR?",
+          "a": "Because counting a subscription the customer cancelled today overstates revenue. The tests assert this specific case."
+        }
+      ],
+      "monetization": [
+        {
+          "tier": "Self-host",
+          "price": "$0",
+          "detail": "Run the metrics your board asks for without another subscription."
+        },
+        {
+          "tier": "Agency reporting",
+          "price": "Your price",
+          "detail": "Host one instance per portfolio company and standardise their MRR definition."
+        },
+        {
+          "tier": "Snapshot service",
+          "price": "Add-on",
+          "detail": "Materialise daily snapshots and sell fast historical reporting without rescanning."
+        }
+      ],
+      "ui": {
+        "intro": "Console at / on port 8650 with headline tiles and a 30-day MRR chart.",
+        "images": []
+      }
     }
   ]
 }

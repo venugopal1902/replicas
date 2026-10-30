@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Baremetrics Engine · Replicas</title>
+<meta name="description" content="Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.">
+<meta property="og:title" content="Baremetrics Engine · Replicas">
+<meta property="og:description" content="Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236ee7b7'/><text x='16' y='23' font-size='19' font-family='monospace' font-weight='bold' text-anchor='middle' fill='%23061010'>R</text></svg>">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html">
+      <span class="logo">R</span>
+      <span>Replicas</span>
+    </a>
+    <div class="nav-links">
+      <a href="../index.html#services">Services</a>
+      <a href="../index.html#how">How it works</a>
+      <a href="../index.html#stack">Tech</a>
+      <a class="gh-btn" href="https://github.com/venugopal1902/replicas">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div class="doc">
+    <aside class="side">
+      <h5>On this page</h5>
+      <ul><li><a href="#overview">Overview</a></li><li><a href="#ui">Interface</a></li><li><a href="#install">Install</a></li><li><a href="#usage">Usage</a></li><li><a href="#api">API reference</a></li><li><a href="#mcp">MCP tools</a></li><li><a href="#monetize">Monetize</a></li><li><a href="#notes">Operational notes</a></li><li><a href="#faq">FAQ</a></li><h5>Source</h5><ul><li><a href="https://github.com/venugopal1902/replicas/tree/main/services/baremetrics-engine">Repository</a></li></ul></ul>
+    </aside>
+    <article class="content">
+      <a class="back" href="../index.html">&larr; All services</a>
+      <h1>Baremetrics Engine</h1>
+      <p class="lede" style="font-size:17px">MRR, churn and MRR movement computed from subscription rows, not estimated.</p>
+      <div class="doc-meta">
+        <span>Replaces <b>Baremetrics</b></span>
+        <span>Version <b>0.1.0</b></span>
+        <span>License <b>MIT</b></span>
+        <span>Runtime <b>Python 3.12</b></span>
+      </div>
+      <h2 id="overview">Overview<a class="anchor-link" href="#overview">#</a></h2><p>Baremetrics computes SaaS metrics from your billing provider. This engine computes the same headline numbers from subscription rows instead of estimating them: MRR and ARR as of a date, active count, ARPU, new and churned MRR over a 30-day window, net new MRR, revenue churn rate and quick ratio, plus a daily MRR series. Ingest is Stripe-shaped so a real webhook can point at it, and the test suite recomputes every headline metric independently from the raw rows so a wrong formula cannot pass.</p><div class="pill-row"><span class="chip">replaces Baremetrics</span><span class="chip">v0.1.0</span><span class="chip">MIT</span><span class="chip">Python 3.12</span></div><h3>What you get</h3><ul><li>22/22 checks passing, metrics recomputed independently</li><li>Cancelled-today exits today&#x27;s MRR, the classic overstatement bug</li><li>Daily MRR series for the last N days</li><li>Stripe-shaped webhook ingest</li><li>Idempotent cancellation</li><li>No baked password: startup fails with setup instructions</li></ul><div class="feature-grid"><div class="feature"><h4>Metrics</h4><p>MRR, ARR, active count, ARPU, new and churned MRR, net new, churn rate, quick ratio.</p></div><div class="feature"><h4>As-of dates</h4><p>Every metric can be asked for a past date, and the MRR series walks day by day.</p></div><div class="feature"><h4>Ingest</h4><p>Stripe-shaped subscription created/deleted events, plus a local API to add and cancel.</p></div><div class="feature"><h4>Console</h4><p>Headline tiles plus a 30-day MRR bar chart rendered from the series endpoint.</p></div><div class="feature"><h4>Proof over prose</h4><p>Tests recompute MRR, ARR, ARPU, new and churned MRR from raw rows and compare.</p></div></div><h2 id="ui">Interface<a class="anchor-link" href="#ui">#</a></h2><p>Console at / on port 8650 with headline tiles and a 30-day MRR chart.</p><div class="shots"></div><h2 id="install">Install<a class="anchor-link" href="#install">#</a></h2><p>From a clean machine to a running server in four commands.</p><h3>Requirements</h3><ul><li>Python 3.11 or newer</li><li>uv (Astral)</li><li>ADMIN_PASSWORD set before first start</li></ul><h3>Step 1 &middot; Clone</h3><p>Get the source.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">git clone https://github.com/venugopal1902/replicas.git
+cd replicas/services/baremetrics-engine</code></pre></div><h3>Step 2 &middot; Install</h3><p>Create the environment.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">uv sync</code></pre></div><h3>Step 3 &middot; Set the admin password</h3><p>Required on first start.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">export ADMIN_PASSWORD=&#x27;choose-a-long-unique-password&#x27;</code></pre></div><h3>Step 4 &middot; Run</h3><p>Console on port 8650.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">uv run python scripts/run_server.py</code></pre></div><h3>Run the suite with the server up</h3><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">cd services/baremetrics-engine
+uv run python tests/test_baremetrics.py
+
+# recorded: ===== 22/22 checks passed =====</code></pre></div><div class="table-wrap"><table><thead><tr><th>Surface</th><th>URL</th></tr></thead><tbody><tr><td>Console</td><td><code>http://127.0.0.1:8650/</code></td></tr><tr><td>Health</td><td><code>http://127.0.0.1:8650/health</code></td></tr><tr><td>Metrics summary</td><td><code>http://127.0.0.1:8650/api/metrics/summary</code></td></tr><tr><td>OpenAPI docs</td><td><code>http://127.0.0.1:8650/docs</code></td></tr></tbody></table></div><h2 id="usage">Usage<a class="anchor-link" href="#usage">#</a></h2><h3>Ask for metrics as of a past date</h3><p>Every headline number accepts as_of, so a board deck can quote any month end.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">TOKEN=$(curl -s -X POST http://127.0.0.1:8650/api/auth/login \
+  -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;email&quot;:&quot;admin@baremetrics.local&quot;,&quot;password&quot;:&quot;your-password&quot;}&#x27; | jq -r .token)
+
+curl -s -H &quot;Authorization: Bearer $TOKEN&quot; \
+  &#x27;http://127.0.0.1:8650/api/metrics/summary?as_of=2026-09-30&#x27; | jq &#x27;{mrrCents,arrCents,churnRatePct}&#x27;</code></pre></div><h3>Feed it a Stripe-shaped event</h3><p>Point a real webhook here, or simulate one.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">curl -s -X POST http://127.0.0.1:8650/webhooks/stripe \
+  -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;type&quot;:&quot;customer.subscription.created&quot;,&quot;data&quot;:{&quot;object&quot;:{&quot;customer_email&quot;:&quot;new@example.com&quot;,&quot;amount&quot;:4900,&quot;plan&quot;:&quot;growth&quot;}}}&#x27;</code></pre></div><h2 id="api">API reference<a class="anchor-link" href="#api">#</a></h2><div class="table-wrap"><table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td><span class="method get">GET</span></td><td><code>/health</code></td><td>Status, subscription count, current MRR</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/auth/login</code></td><td>Admin token</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/metrics/summary</code></td><td>All headline metrics, optional as_of</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/metrics/mrr-series</code></td><td>Daily MRR and active count</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/customers</code></td><td>Customers joined to their subscription</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/subscriptions</code></td><td>Subscriptions, optional status filter</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/subscriptions</code></td><td>Add a subscription</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/subscriptions/{id}/cancel</code></td><td>Cancel, idempotent</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/report.csv</code></td><td>CSV of every subscription</td></tr><tr><td><span class="method post">POST</span></td><td><code>/webhooks/stripe</code></td><td>Stripe-shaped ingest</td></tr></tbody></table></div><h2 id="monetize">Monetize<a class="anchor-link" href="#monetize">#</a></h2><p>The billing layer is built in. Keys carry a plan, a credit balance and an hourly ceiling, so you can resell access without writing auth code.</p><div class="price-grid"><div class="price"><h4>Self-host</h4><b>$0</b><p>Run the metrics your board asks for without another subscription.</p></div><div class="price"><h4>Agency reporting</h4><b>Your price</b><p>Host one instance per portfolio company and standardise their MRR definition.</p></div><div class="price"><h4>Snapshot service</h4><b>Add-on</b><p>Materialise daily snapshots and sell fast historical reporting without rescanning.</p></div></div><div class="callout"><b>Ship it publicly:</b> put the service behind Caddy or Nginx with TLS, point a subdomain at it, then hand clients <code>https://api.yourdomain.com/v2</code> and their own key.</div><h2 id="notes">Operational notes<a class="anchor-link" href="#notes">#</a></h2><div class="callout warn"><b>Read before going live.</b> These are the things that break in production.</div><ul><li>Baremetrics pricing was UNVERIFIED in our research pass, so no price ladder is claimed.</li><li>Churn is revenue churn, not logo churn. No per-plan or cohort views.</li><li>Webhook ingest trusts its payload. Put it behind your own signature check before exposing it.</li><li>Metrics are computed on read; at scale you would materialise daily snapshots.</li></ul><h2 id="faq">FAQ<a class="anchor-link" href="#faq">#</a></h2><details><summary>Does it connect to Stripe directly?</summary><p>No. It accepts Stripe-shaped webhooks. Point your Stripe endpoint here, or use the local API.</p></details><details><summary>Why does a cancellation affect today&#x27;s MRR?</summary><p>Because counting a subscription the customer cancelled today overstates revenue. The tests assert this specific case.</p></details>
+    </article>
+  </div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>&copy; Gubbala Venu Gopal</span>
+    <span>Replicas &middot; self-hosted replacements</span>
+    <span class="sp"><a href="https://github.com/venugopal1902/replicas">Source on GitHub</a></span>
+  </div>
+</footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

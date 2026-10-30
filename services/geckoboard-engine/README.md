@@ -59,7 +59,7 @@ curl -u "$GECKOBOARD_DATASET_API_KEY:" \
   -d '{"data":[{"date":"2026-05-21","amount":42}]}'
 ```
 
-Supported field types: `date`, `datetime`, `duration`, `money`, `number`, `percentage`, and `string`. Requests accept up to 1,000 records; each dataset stores at most 50,000 rows, and string values are limited to 5,000 characters. Raw-record reads support `?limit=...&offset=...` pagination. The API key can be rotated from the admin console; the new key is returned once in the authenticated response and is never logged. Rotating it immediately invalidates existing integrations.
+Supported field types: `date`, `datetime`, `duration`, `money`, `number`, `percentage`, and `string`. Requests are capped at 2 MiB and 1,000 records; each dataset stores at most 50,000 rows, and string values are limited to 5,000 characters. Raw-record reads support `?limit=...&offset=...` pagination. The API key can be rotated from the admin console; the new key is returned once in the authenticated response and is never logged. Rotating it immediately invalidates existing integrations.
 
 ### Main routes
 
@@ -96,3 +96,5 @@ Supported widgets: number, line, column, bar, leaderboard, and table. A line wid
 - Geckoboard Datasets API reference: https://developer.geckoboard.com/ . The implementation follows the documented dataset definition, Basic Auth, append/replace, field typing, and unique-key concepts, with a deliberately smaller local surface.
 - FastAPI lifespan events: https://fastapi.tiangolo.com/advanced/events/ .
 - FastAPI response cookies: https://fastapi.tiangolo.com/advanced/response-cookies/ .
+- FastAPI HTTP Basic Auth: https://fastapi.tiangolo.com/advanced/security/http-basic-auth/ .
+- FastAPI query validation: https://fastapi.tiangolo.com/tutorial/query-params-str-validations/ .

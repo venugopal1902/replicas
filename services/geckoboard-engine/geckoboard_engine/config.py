@@ -18,7 +18,9 @@ class Settings:
     version: str = "0.1.0"
     host: str = os.environ.get("GECKOBOARD_HOST", "127.0.0.1")
     port: int = int(os.environ.get("GECKOBOARD_PORT", "8670"))
-    db_path: Path = Path(os.environ.get("GECKOBOARD_DB_PATH", str(BASE_DIR / "data" / "geckoboard.db")))
+    db_path: Path = Path(
+        os.environ.get("GECKOBOARD_DB_PATH", str(BASE_DIR / "data" / "geckoboard.db"))
+    )
     admin_email: str = os.environ.get("GECKOBOARD_ADMIN_EMAIL", "admin@geckoboard.local")
     admin_name: str = os.environ.get("GECKOBOARD_ADMIN_NAME", "Geckoboard Admin")
     admin_password: str = os.environ.get("GECKOBOARD_ADMIN_PASSWORD", "")

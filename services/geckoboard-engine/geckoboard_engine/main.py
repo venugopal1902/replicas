@@ -41,7 +41,9 @@ def current_admin(request: Request) -> dict[str, Any]:
         raise _unauthorized("Admin session required")
     token_digest = hash_session(token)
     with db_connection() as conn:
-        row = conn.execute("SELECT expires_at FROM sessions WHERE token_hash=?", (token_digest,)).fetchone()
+        row = conn.execute(
+            "SELECT expires_at FROM sessions WHERE token_hash=?", (token_digest,)
+        ).fetchone()
         admin = conn.execute("SELECT id,email,display_name FROM admin_users WHERE id=1").fetchone()
     if not row or not admin:
         raise _unauthorized("Invalid admin session")
@@ -67,7 +69,10 @@ def _json(value: str) -> Any:
 
 def _dataset_id(value: Any) -> str:
     if not isinstance(value, str) or not DATASET_ID_RE.fullmatch(value) or value in {".", ".."}:
-        raise HTTPException(status_code=422, detail="Dataset id must use 1-100 letters, digits, dots, underscores, or hyphens")
+        raise HTTPException(
+            status_code=422,
+            detail="Dataset id must use 1-100 letters, digits, dots, underscores, or hyphens",
+        )
     return value
 
 
@@ -82,20 +87,35 @@ def _validate_spec(dataset_id: str, body: dict[str, Any]) -> tuple[dict[str, Any
         field_type = item.get("type")
         name = item.get("name", key)
         optional = item.get("optional", False)
-        if not isinstance(field_type, str) or field_type not in FIELD_TYPES or not isinstance(name, str) or not name.strip() or not isinstance(optional, bool):
+        if (
+            not isinstance(field_type, str)
+            or field_type not in FIELD_TYPES
+            or not isinstance(name, str)
+            or not name.strip()
+            or not isinstance(optional, bool)
+        ):
             raise HTTPException(status_code=422, detail=f"Invalid definition for field {key}")
         clean = {"type": field_type, "name": name.strip(), "optional": optional}
         if field_type == "money":
             currency = item.get("currency_code")
             if not isinstance(currency, str) or not re.fullmatch(r"[A-Z]{3}", currency):
-                raise HTTPException(status_code=422, detail=f"Money field {key} requires a three-letter currency_code")
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Money field {key} requires a three-letter currency_code",
+                )
             clean["currency_code"] = currency
         normalized[key] = clean
     unique_by = body.get("unique_by", [])
-    if not isinstance(unique_by, list) or any(not isinstance(key, str) or key not in normalized for key in unique_by):
-        raise HTTPException(status_code=422, detail="unique_by must be an array of defined field names")
+    if not isinstance(unique_by, list) or any(
+        not isinstance(key, str) or key not in normalized for key in unique_by
+    ):
+        raise HTTPException(
+            status_code=422, detail="unique_by must be an array of defined field names"
+        )
     if len(set(unique_by)) != len(unique_by):
-        raise HTTPException(status_code=422, detail="unique_by cannot contain duplicate field names")
+        raise HTTPException(
+            status_code=422, detail="unique_by cannot contain duplicate field names"
+        )
     return normalized, unique_by
 
 
@@ -116,19 +136,32 @@ def _dataset_dict(row) -> dict[str, Any]:
     }
 
 
-def _insert_dataset(dataset_id: str, fields: dict[str, Any], unique_by: list[str], allow_existing: bool) -> tuple[dict[str, Any], bool]:
+def _insert_dataset(
+    dataset_id: str, fields: dict[str, Any], unique_by: list[str], allow_existing: bool
+) -> tuple[dict[str, Any], bool]:
     stamp = now()
     with db_connection() as conn:
         existing = conn.execute("SELECT * FROM datasets WHERE id=?", (dataset_id,)).fetchone()
         if existing:
             if not allow_existing:
                 raise HTTPException(status_code=409, detail="Dataset already exists")
-            if _json(existing["fields_json"]) != fields or _json(existing["unique_by_json"]) != unique_by:
-                raise HTTPException(status_code=409, detail="Dataset exists with a different schema")
+            if (
+                _json(existing["fields_json"]) != fields
+                or _json(existing["unique_by_json"]) != unique_by
+            ):
+                raise HTTPException(
+                    status_code=409, detail="Dataset exists with a different schema"
+                )
             return _dataset_dict(existing), False
         conn.execute(
             "INSERT INTO datasets (id,fields_json,unique_by_json,created_at,updated_at) VALUES (?,?,?,?,?)",
-            (dataset_id, json.dumps(fields, separators=(",", ":")), json.dumps(unique_by), stamp, stamp),
+            (
+                dataset_id,
+                json.dumps(fields, separators=(",", ":")),
+                json.dumps(unique_by),
+                stamp,
+                stamp,
+            ),
         )
         row = conn.execute("SELECT * FROM datasets WHERE id=?", (dataset_id,)).fetchone()
         return _dataset_dict(row), True
@@ -144,7 +177,9 @@ def _validate_record(record: Any, fields: dict[str, Any], index: int) -> dict[st
     for key, definition in fields.items():
         if key not in record:
             if not definition["optional"]:
-                raise HTTPException(status_code=422, detail=f"Record {index} is missing required field {key}")
+                raise HTTPException(
+                    status_code=422, detail=f"Record {index} is missing required field {key}"
+                )
             continue
         value = record[key]
         field_type = definition["type"]
@@ -168,9 +203,15 @@ def _validate_record(record: Any, fields: dict[str, Any], index: int) -> dict[st
                 except ValueError:
                     valid = False
         else:
-            valid = isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value))
+            valid = (
+                isinstance(value, (int, float))
+                and not isinstance(value, bool)
+                and math.isfinite(float(value))
+            )
         if not valid:
-            raise HTTPException(status_code=422, detail=f"Record {index} has invalid {field_type} value for {key}")
+            raise HTTPException(
+                status_code=422, detail=f"Record {index} has invalid {field_type} value for {key}"
+            )
         normalized[key] = value
     return normalized
 
@@ -183,14 +224,20 @@ def _store_records(dataset_id: str, body: dict[str, Any], replace: bool) -> dict
         dataset = _get_dataset(conn, dataset_id)
         fields = _json(dataset["fields_json"])
         unique_by = _json(dataset["unique_by_json"])
-        normalized = [_validate_record(record, fields, index) for index, record in enumerate(records)]
+        normalized = [
+            _validate_record(record, fields, index) for index, record in enumerate(records)
+        ]
         existing_total = conn.execute(
             "SELECT COUNT(*) FROM dataset_records WHERE dataset_id=?", (dataset_id,)
         ).fetchone()[0]
-        unique_keys = [
-            json.dumps([record.get(key) for key in unique_by], separators=(",", ":"))
-            for record in normalized
-        ] if unique_by else []
+        unique_keys = (
+            [
+                json.dumps([record.get(key) for key in unique_by], separators=(",", ":"))
+                for record in normalized
+            ]
+            if unique_by
+            else []
+        )
         if replace:
             projected_total = len(set(unique_keys)) if unique_by else len(normalized)
         elif unique_by:
@@ -209,7 +256,11 @@ def _store_records(dataset_id: str, body: dict[str, Any], replace: bool) -> dict
         if replace:
             conn.execute("DELETE FROM dataset_records WHERE dataset_id=?", (dataset_id,))
         for record in normalized:
-            unique_key = json.dumps([record.get(key) for key in unique_by], separators=(",", ":")) if unique_by else None
+            unique_key = (
+                json.dumps([record.get(key) for key in unique_by], separators=(",", ":"))
+                if unique_by
+                else None
+            )
             stamp = now()
             if unique_key is None:
                 conn.execute(
@@ -223,12 +274,18 @@ def _store_records(dataset_id: str, body: dict[str, Any], replace: bool) -> dict
                     (dataset_id, json.dumps(record, separators=(",", ":")), unique_key, stamp),
                 )
         conn.execute("UPDATE datasets SET updated_at=? WHERE id=?", (now(), dataset_id))
-        total = conn.execute("SELECT COUNT(*) FROM dataset_records WHERE dataset_id=?", (dataset_id,)).fetchone()[0]
+        total = conn.execute(
+            "SELECT COUNT(*) FROM dataset_records WHERE dataset_id=?", (dataset_id,)
+        ).fetchone()[0]
     return {"inserted": len(normalized), "total": total, "replaced": replace}
 
 
 def _normalize_widget(widget: Any, index: int) -> dict[str, Any]:
-    if not isinstance(widget, dict) or not isinstance(widget.get("type"), str) or widget.get("type") not in WIDGET_TYPES:
+    if (
+        not isinstance(widget, dict)
+        or not isinstance(widget.get("type"), str)
+        or widget.get("type") not in WIDGET_TYPES
+    ):
         raise HTTPException(status_code=422, detail=f"Widget {index} has an unsupported type")
     dataset_id = _dataset_id(widget.get("dataset_id"))
     with db_connection() as conn:
@@ -239,21 +296,43 @@ def _normalize_widget(widget: Any, index: int) -> dict[str, Any]:
     if not isinstance(aggregate, str) or aggregate not in AGGREGATES:
         raise HTTPException(status_code=422, detail=f"Widget {index} has an invalid aggregate")
     metric = widget.get("metric_field")
-    if widget_type != "table" and aggregate != "count" and (
-        not isinstance(metric, str) or metric not in fields or fields[metric]["type"] not in NUMERIC_TYPES
+    if (
+        widget_type != "table"
+        and aggregate != "count"
+        and (
+            not isinstance(metric, str)
+            or metric not in fields
+            or fields[metric]["type"] not in NUMERIC_TYPES
+        )
     ):
-        raise HTTPException(status_code=422, detail=f"Widget {index} requires a numeric metric_field")
+        raise HTTPException(
+            status_code=422, detail=f"Widget {index} requires a numeric metric_field"
+        )
     if widget_type in {"bar", "column", "leaderboard"}:
         dimension = widget.get("dimension_field")
-        if not isinstance(dimension, str) or dimension not in fields or fields[dimension]["type"] not in {"date", "datetime", "string"}:
-            raise HTTPException(status_code=422, detail=f"Widget {index} requires a categorical dimension_field")
+        if (
+            not isinstance(dimension, str)
+            or dimension not in fields
+            or fields[dimension]["type"] not in {"date", "datetime", "string"}
+        ):
+            raise HTTPException(
+                status_code=422, detail=f"Widget {index} requires a categorical dimension_field"
+            )
     if widget_type == "line":
         time_field = widget.get("time_field")
-        if not isinstance(time_field, str) or time_field not in fields or fields[time_field]["type"] not in {"date", "datetime"}:
-            raise HTTPException(status_code=422, detail=f"Widget {index} requires a date or datetime time_field")
+        if (
+            not isinstance(time_field, str)
+            or time_field not in fields
+            or fields[time_field]["type"] not in {"date", "datetime"}
+        ):
+            raise HTTPException(
+                status_code=422, detail=f"Widget {index} requires a date or datetime time_field"
+            )
     limit = widget.get("limit", 20)
     if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= 100:
-        raise HTTPException(status_code=422, detail=f"Widget {index} limit must be between 1 and 100")
+        raise HTTPException(
+            status_code=422, detail=f"Widget {index} limit must be between 1 and 100"
+        )
     clean = {
         "id": str(widget.get("id") or f"widget-{secrets.token_hex(4)}")[:80],
         "type": widget_type,
@@ -267,17 +346,26 @@ def _normalize_widget(widget: Any, index: int) -> dict[str, Any]:
     for key in ("dimension_field", "time_field"):
         if key in widget:
             clean[key] = widget[key]
-    for key, default, minimum, maximum in (("x", 0, 0, 11), ("y", index * 2, 0, 100), ("width", 6, 1, 12), ("height", 2, 1, 8)):
+    for key, default, minimum, maximum in (
+        ("x", 0, 0, 11),
+        ("y", index * 2, 0, 100),
+        ("width", 6, 1, 12),
+        ("height", 2, 1, 8),
+    ):
         value = widget.get(key, default)
         if not isinstance(value, int) or isinstance(value, bool) or not minimum <= value <= maximum:
-            raise HTTPException(status_code=422, detail=f"Widget {index} has invalid layout field {key}")
+            raise HTTPException(
+                status_code=422, detail=f"Widget {index} has invalid layout field {key}"
+            )
         clean[key] = value
     return clean
 
 
 def _normalize_widgets(widgets: Any) -> list[dict[str, Any]]:
     if not isinstance(widgets, list) or len(widgets) > 12:
-        raise HTTPException(status_code=422, detail="widgets must be an array with at most 12 items")
+        raise HTTPException(
+            status_code=422, detail="widgets must be an array with at most 12 items"
+        )
     normalized = [_normalize_widget(widget, index) for index, widget in enumerate(widgets)]
     ids = [widget["id"] for widget in normalized]
     if len(ids) != len(set(ids)):
@@ -288,7 +376,11 @@ def _normalize_widgets(widgets: Any) -> list[dict[str, Any]]:
 def _number(values: list[Any], aggregate: str, row_count: int) -> float | int:
     if aggregate == "count":
         return row_count
-    numbers = [float(value) for value in values if isinstance(value, (int, float)) and not isinstance(value, bool)]
+    numbers = [
+        float(value)
+        for value in values
+        if isinstance(value, (int, float)) and not isinstance(value, bool)
+    ]
     if not numbers:
         return 0
     result = {
@@ -315,13 +407,22 @@ def _widget_result(widget: dict[str, Any]) -> dict[str, Any]:
         return {"items": list(reversed(records[-limit:]))}
     metric = widget.get("metric_field")
     if kind == "number":
-        return {"value": _number([record.get(metric) for record in records] if metric else [], aggregate, len(records))}
+        return {
+            "value": _number(
+                [record.get(metric) for record in records] if metric else [],
+                aggregate,
+                len(records),
+            )
+        }
     group_key = widget.get("time_field") if kind == "line" else widget.get("dimension_field")
     groups: dict[str, list[Any]] = {}
     for record in records:
         label = str(record.get(group_key, "Unknown"))
         groups.setdefault(label, []).append(record.get(metric) if metric else 1)
-    items = [{"label": label, "value": _number(values, aggregate, len(values))} for label, values in groups.items()]
+    items = [
+        {"label": label, "value": _number(values, aggregate, len(values))}
+        for label, values in groups.items()
+    ]
     if kind == "line":
         items.sort(key=lambda item: item["label"])
     else:
@@ -402,7 +503,14 @@ def health() -> dict[str, Any]:
     with db_connection() as conn:
         datasets = conn.execute("SELECT COUNT(*) FROM datasets").fetchone()[0]
         dashboards = conn.execute("SELECT COUNT(*) FROM dashboards").fetchone()[0]
-    return {"status": "online", "service": settings.app_name, "version": settings.version, "port": settings.port, "datasets": datasets, "dashboards": dashboards}
+    return {
+        "status": "online",
+        "service": settings.app_name,
+        "version": settings.version,
+        "port": settings.port,
+        "datasets": datasets,
+        "dashboards": dashboards,
+    }
 
 
 @app.post("/api/auth/login")
@@ -411,21 +519,40 @@ def login(body: dict[str, Any] = Body(...), response: Response = None) -> dict[s
     password = body.get("password")
     with db_connection() as conn:
         row = conn.execute("SELECT * FROM admin_users WHERE lower(email)=?", (email,)).fetchone()
-        if not row or not isinstance(password, str) or not verify_password(password, row["password_hash"]):
+        if (
+            not row
+            or not isinstance(password, str)
+            or not verify_password(password, row["password_hash"])
+        ):
             raise _unauthorized("Invalid email or password")
         token = secrets.token_urlsafe(32)
         expires = datetime.now(UTC) + timedelta(hours=settings.session_hours)
-        conn.execute("INSERT INTO sessions (token_hash,expires_at,created_at) VALUES (?,?,?)", (hash_session(token), expires.isoformat(timespec="seconds"), now()))
-    response.set_cookie(COOKIE_NAME, token, httponly=True, secure=settings.cookie_secure, samesite="lax", max_age=settings.session_hours * 3600, path="/")
+        conn.execute(
+            "INSERT INTO sessions (token_hash,expires_at,created_at) VALUES (?,?,?)",
+            (hash_session(token), expires.isoformat(timespec="seconds"), now()),
+        )
+    response.set_cookie(
+        COOKIE_NAME,
+        token,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite="lax",
+        max_age=settings.session_hours * 3600,
+        path="/",
+    )
     return {"ok": True, "user": {"email": row["email"], "name": row["display_name"]}}
 
 
 @app.post("/api/auth/logout")
-def logout(request: Request, response: Response, admin: dict[str, Any] = Depends(current_admin)) -> dict[str, bool]:
+def logout(
+    request: Request, response: Response, admin: dict[str, Any] = Depends(current_admin)
+) -> dict[str, bool]:
     token = request.cookies.get(COOKIE_NAME, "")
     with db_connection() as conn:
         conn.execute("DELETE FROM sessions WHERE token_hash=?", (hash_session(token),))
-    response.delete_cookie(COOKIE_NAME, path="/", httponly=True, secure=settings.cookie_secure, samesite="lax")
+    response.delete_cookie(
+        COOKIE_NAME, path="/", httponly=True, secure=settings.cookie_secure, samesite="lax"
+    )
     return {"ok": True}
 
 
@@ -438,7 +565,10 @@ def ping(_: None = Depends(require_dataset_key)) -> dict[str, Any]:
 def rotate_dataset_key(_: dict[str, Any] = Depends(current_admin)) -> dict[str, str]:
     key = secrets.token_urlsafe(32)
     with db_connection() as conn:
-        conn.execute("UPDATE dataset_api_credentials SET key_hash=?,created_at=? WHERE id=1", (hash_api_key(key), now()))
+        conn.execute(
+            "UPDATE dataset_api_credentials SET key_hash=?,created_at=? WHERE id=1",
+            (hash_api_key(key), now()),
+        )
     return {"api_key": key, "notice": "Shown once. Copy it now; it is not stored in plaintext."}
 
 
@@ -450,7 +580,9 @@ def admin_list_datasets(_: dict[str, Any] = Depends(current_admin)) -> dict[str,
 
 
 @app.post("/api/admin/datasets", status_code=status.HTTP_201_CREATED)
-def admin_create_dataset(body: dict[str, Any] = Body(...), _: dict[str, Any] = Depends(current_admin)) -> dict[str, Any]:
+def admin_create_dataset(
+    body: dict[str, Any] = Body(...), _: dict[str, Any] = Depends(current_admin)
+) -> dict[str, Any]:
     dataset_id = _dataset_id(body.get("id"))
     fields, unique_by = _validate_spec(dataset_id, body)
     dataset, _ = _insert_dataset(dataset_id, fields, unique_by, allow_existing=False)
@@ -458,13 +590,17 @@ def admin_create_dataset(body: dict[str, Any] = Body(...), _: dict[str, Any] = D
 
 
 @app.get("/api/admin/datasets/{dataset_id}")
-def admin_get_dataset(dataset_id: str, _: dict[str, Any] = Depends(current_admin)) -> dict[str, Any]:
+def admin_get_dataset(
+    dataset_id: str, _: dict[str, Any] = Depends(current_admin)
+) -> dict[str, Any]:
     with db_connection() as conn:
         return _dataset_dict(_get_dataset(conn, _dataset_id(dataset_id)))
 
 
 @app.delete("/api/admin/datasets/{dataset_id}")
-def admin_delete_dataset(dataset_id: str, _: dict[str, Any] = Depends(current_admin)) -> dict[str, bool]:
+def admin_delete_dataset(
+    dataset_id: str, _: dict[str, Any] = Depends(current_admin)
+) -> dict[str, bool]:
     with db_connection() as conn:
         cursor = conn.execute("DELETE FROM datasets WHERE id=?", (_dataset_id(dataset_id),))
         if not cursor.rowcount:
@@ -473,7 +609,9 @@ def admin_delete_dataset(dataset_id: str, _: dict[str, Any] = Depends(current_ad
 
 
 @app.put("/api/datasets/{dataset_id}")
-def api_define_dataset(dataset_id: str, body: dict[str, Any] = Body(...), _: None = Depends(require_dataset_key)) -> dict[str, Any]:
+def api_define_dataset(
+    dataset_id: str, body: dict[str, Any] = Body(...), _: None = Depends(require_dataset_key)
+) -> dict[str, Any]:
     dataset_id = _dataset_id(dataset_id)
     fields, unique_by = _validate_spec(dataset_id, body)
     dataset, _ = _insert_dataset(dataset_id, fields, unique_by, allow_existing=True)
@@ -496,12 +634,16 @@ def api_delete_dataset(dataset_id: str, _: None = Depends(require_dataset_key)) 
 
 
 @app.post("/api/datasets/{dataset_id}/data")
-def api_append_data(dataset_id: str, body: dict[str, Any] = Body(...), _: None = Depends(require_dataset_key)) -> dict[str, Any]:
+def api_append_data(
+    dataset_id: str, body: dict[str, Any] = Body(...), _: None = Depends(require_dataset_key)
+) -> dict[str, Any]:
     return _store_records(_dataset_id(dataset_id), body, replace=False)
 
 
 @app.put("/api/datasets/{dataset_id}/data")
-def api_replace_data(dataset_id: str, body: dict[str, Any] = Body(...), _: None = Depends(require_dataset_key)) -> dict[str, Any]:
+def api_replace_data(
+    dataset_id: str, body: dict[str, Any] = Body(...), _: None = Depends(require_dataset_key)
+) -> dict[str, Any]:
     return _store_records(_dataset_id(dataset_id), body, replace=True)
 
 
@@ -535,13 +677,21 @@ def export_csv(dataset_id: str, _: dict[str, Any] = Depends(current_admin)) -> P
     with db_connection() as conn:
         dataset = _get_dataset(conn, _dataset_id(dataset_id))
         fields = _json(dataset["fields_json"])
-        rows = conn.execute("SELECT record_json FROM dataset_records WHERE dataset_id=? ORDER BY id", (dataset_id,)).fetchall()
+        rows = conn.execute(
+            "SELECT record_json FROM dataset_records WHERE dataset_id=? ORDER BY id", (dataset_id,)
+        ).fetchall()
     buffer = io.StringIO()
     writer = csv.DictWriter(buffer, fieldnames=list(fields), extrasaction="ignore")
     writer.writeheader()
     for row in rows:
         writer.writerow(_json(row["record_json"]))
-    return PlainTextResponse(buffer.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{dataset_id.replace(".", "-")}.csv"'})
+    return PlainTextResponse(
+        buffer.getvalue(),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="{dataset_id.replace(".", "-")}.csv"'
+        },
+    )
 
 
 @app.get("/api/admin/dashboards")
@@ -552,7 +702,9 @@ def admin_list_dashboards(_: dict[str, Any] = Depends(current_admin)) -> dict[st
 
 
 @app.post("/api/admin/dashboards", status_code=status.HTTP_201_CREATED)
-def admin_create_dashboard(body: dict[str, Any] = Body(...), _: dict[str, Any] = Depends(current_admin)) -> dict[str, Any]:
+def admin_create_dashboard(
+    body: dict[str, Any] = Body(...), _: dict[str, Any] = Depends(current_admin)
+) -> dict[str, Any]:
     name = body.get("name")
     if not isinstance(name, str) or not name.strip() or len(name) > 100:
         raise HTTPException(status_code=422, detail="Dashboard name must be 1-100 characters")
@@ -560,13 +712,18 @@ def admin_create_dashboard(body: dict[str, Any] = Body(...), _: dict[str, Any] =
     dashboard_id = "dash-" + secrets.token_hex(8)
     stamp = now()
     with db_connection() as conn:
-        conn.execute("INSERT INTO dashboards (id,name,widgets_json,created_at,updated_at) VALUES (?,?,?,?,?)", (dashboard_id, name.strip(), json.dumps(widgets, separators=(",", ":")), stamp, stamp))
+        conn.execute(
+            "INSERT INTO dashboards (id,name,widgets_json,created_at,updated_at) VALUES (?,?,?,?,?)",
+            (dashboard_id, name.strip(), json.dumps(widgets, separators=(",", ":")), stamp, stamp),
+        )
         row = conn.execute("SELECT * FROM dashboards WHERE id=?", (dashboard_id,)).fetchone()
     return _dashboard_dict(row)
 
 
 @app.get("/api/admin/dashboards/{dashboard_id}")
-def admin_get_dashboard(dashboard_id: str, _: dict[str, Any] = Depends(current_admin)) -> dict[str, Any]:
+def admin_get_dashboard(
+    dashboard_id: str, _: dict[str, Any] = Depends(current_admin)
+) -> dict[str, Any]:
     with db_connection() as conn:
         row = conn.execute("SELECT * FROM dashboards WHERE id=?", (dashboard_id,)).fetchone()
     if not row:
@@ -575,7 +732,9 @@ def admin_get_dashboard(dashboard_id: str, _: dict[str, Any] = Depends(current_a
 
 
 @app.put("/api/admin/dashboards/{dashboard_id}")
-def admin_update_dashboard(dashboard_id: str, body: dict[str, Any] = Body(...), _: dict[str, Any] = Depends(current_admin)) -> dict[str, Any]:
+def admin_update_dashboard(
+    dashboard_id: str, body: dict[str, Any] = Body(...), _: dict[str, Any] = Depends(current_admin)
+) -> dict[str, Any]:
     with db_connection() as conn:
         row = conn.execute("SELECT * FROM dashboards WHERE id=?", (dashboard_id,)).fetchone()
         if not row:
@@ -584,13 +743,18 @@ def admin_update_dashboard(dashboard_id: str, body: dict[str, Any] = Body(...), 
         if not isinstance(name, str) or not name.strip() or len(name) > 100:
             raise HTTPException(status_code=422, detail="Dashboard name must be 1-100 characters")
         widgets = _normalize_widgets(body.get("widgets", _json(row["widgets_json"])))
-        conn.execute("UPDATE dashboards SET name=?,widgets_json=?,updated_at=? WHERE id=?", (name.strip(), json.dumps(widgets, separators=(",", ":")), now(), dashboard_id))
+        conn.execute(
+            "UPDATE dashboards SET name=?,widgets_json=?,updated_at=? WHERE id=?",
+            (name.strip(), json.dumps(widgets, separators=(",", ":")), now(), dashboard_id),
+        )
         updated = conn.execute("SELECT * FROM dashboards WHERE id=?", (dashboard_id,)).fetchone()
     return _dashboard_dict(updated)
 
 
 @app.delete("/api/admin/dashboards/{dashboard_id}")
-def admin_delete_dashboard(dashboard_id: str, _: dict[str, Any] = Depends(current_admin)) -> dict[str, bool]:
+def admin_delete_dashboard(
+    dashboard_id: str, _: dict[str, Any] = Depends(current_admin)
+) -> dict[str, bool]:
     with db_connection() as conn:
         cursor = conn.execute("DELETE FROM dashboards WHERE id=?", (dashboard_id,))
         if not cursor.rowcount:
@@ -598,12 +762,17 @@ def admin_delete_dashboard(dashboard_id: str, _: dict[str, Any] = Depends(curren
         rotations = conn.execute("SELECT id,dashboard_ids_json FROM rotations").fetchall()
         for rotation in rotations:
             ids = [item for item in _json(rotation["dashboard_ids_json"]) if item != dashboard_id]
-            conn.execute("UPDATE rotations SET dashboard_ids_json=?,updated_at=? WHERE id=?", (json.dumps(ids), now(), rotation["id"]))
+            conn.execute(
+                "UPDATE rotations SET dashboard_ids_json=?,updated_at=? WHERE id=?",
+                (json.dumps(ids), now(), rotation["id"]),
+            )
     return {"ok": True}
 
 
 @app.get("/api/admin/dashboards/{dashboard_id}/preview")
-def admin_dashboard_preview(dashboard_id: str, _: dict[str, Any] = Depends(current_admin)) -> dict[str, Any]:
+def admin_dashboard_preview(
+    dashboard_id: str, _: dict[str, Any] = Depends(current_admin)
+) -> dict[str, Any]:
     with db_connection() as conn:
         row = conn.execute("SELECT * FROM dashboards WHERE id=?", (dashboard_id,)).fetchone()
     if not row:
@@ -620,8 +789,14 @@ def admin_list_rotations(_: dict[str, Any] = Depends(current_admin)) -> dict[str
 
 
 def _check_dashboard_ids(conn, dashboard_ids: Any) -> list[str]:
-    if not isinstance(dashboard_ids, list) or not 1 <= len(dashboard_ids) <= 10 or any(not isinstance(item, str) for item in dashboard_ids):
-        raise HTTPException(status_code=422, detail="dashboard_ids must contain 1 to 10 dashboard ids")
+    if (
+        not isinstance(dashboard_ids, list)
+        or not 1 <= len(dashboard_ids) <= 10
+        or any(not isinstance(item, str) for item in dashboard_ids)
+    ):
+        raise HTTPException(
+            status_code=422, detail="dashboard_ids must contain 1 to 10 dashboard ids"
+        )
     if len(set(dashboard_ids)) != len(dashboard_ids):
         raise HTTPException(status_code=422, detail="dashboard_ids cannot contain duplicates")
     for dashboard_id in dashboard_ids:
@@ -631,7 +806,9 @@ def _check_dashboard_ids(conn, dashboard_ids: Any) -> list[str]:
 
 
 @app.post("/api/admin/rotations", status_code=status.HTTP_201_CREATED)
-def admin_create_rotation(body: dict[str, Any] = Body(...), _: dict[str, Any] = Depends(current_admin)) -> dict[str, Any]:
+def admin_create_rotation(
+    body: dict[str, Any] = Body(...), _: dict[str, Any] = Depends(current_admin)
+) -> dict[str, Any]:
     name = body.get("name")
     interval = body.get("interval_seconds", 30)
     if not isinstance(name, str) or not name.strip() or len(name) > 100:
@@ -646,13 +823,27 @@ def admin_create_rotation(body: dict[str, Any] = Body(...), _: dict[str, Any] = 
         rotation_id = "rotation-" + secrets.token_hex(8)
         public_id = secrets.token_urlsafe(16)
         stamp = now()
-        conn.execute("INSERT INTO rotations (id,public_id,name,dashboard_ids_json,interval_seconds,active,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)", (rotation_id, public_id, name.strip(), json.dumps(dashboard_ids), interval, int(active), stamp, stamp))
+        conn.execute(
+            "INSERT INTO rotations (id,public_id,name,dashboard_ids_json,interval_seconds,active,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)",
+            (
+                rotation_id,
+                public_id,
+                name.strip(),
+                json.dumps(dashboard_ids),
+                interval,
+                int(active),
+                stamp,
+                stamp,
+            ),
+        )
         row = conn.execute("SELECT * FROM rotations WHERE id=?", (rotation_id,)).fetchone()
     return _rotation_dict(row)
 
 
 @app.put("/api/admin/rotations/{rotation_id}")
-def admin_update_rotation(rotation_id: str, body: dict[str, Any] = Body(...), _: dict[str, Any] = Depends(current_admin)) -> dict[str, Any]:
+def admin_update_rotation(
+    rotation_id: str, body: dict[str, Any] = Body(...), _: dict[str, Any] = Depends(current_admin)
+) -> dict[str, Any]:
     with db_connection() as conn:
         row = conn.execute("SELECT * FROM rotations WHERE id=?", (rotation_id,)).fetchone()
         if not row:
@@ -662,10 +853,20 @@ def admin_update_rotation(rotation_id: str, body: dict[str, Any] = Body(...), _:
         active = body.get("active", bool(row["active"]))
         if not isinstance(name, str) or not name.strip() or len(name) > 100:
             raise HTTPException(status_code=422, detail="Rotation name must be 1-100 characters")
-        if not isinstance(interval, int) or isinstance(interval, bool) or not 10 <= interval <= 600 or not isinstance(active, bool):
+        if (
+            not isinstance(interval, int)
+            or isinstance(interval, bool)
+            or not 10 <= interval <= 600
+            or not isinstance(active, bool)
+        ):
             raise HTTPException(status_code=422, detail="Invalid rotation settings")
-        dashboards = _check_dashboard_ids(conn, body.get("dashboard_ids", _json(row["dashboard_ids_json"])))
-        conn.execute("UPDATE rotations SET name=?,dashboard_ids_json=?,interval_seconds=?,active=?,updated_at=? WHERE id=?", (name.strip(), json.dumps(dashboards), interval, int(active), now(), rotation_id))
+        dashboards = _check_dashboard_ids(
+            conn, body.get("dashboard_ids", _json(row["dashboard_ids_json"]))
+        )
+        conn.execute(
+            "UPDATE rotations SET name=?,dashboard_ids_json=?,interval_seconds=?,active=?,updated_at=? WHERE id=?",
+            (name.strip(), json.dumps(dashboards), interval, int(active), now(), rotation_id),
+        )
         updated = conn.execute("SELECT * FROM rotations WHERE id=?", (rotation_id,)).fetchone()
     return _rotation_dict(updated)
 
@@ -673,22 +874,32 @@ def admin_update_rotation(rotation_id: str, body: dict[str, Any] = Body(...), _:
 @app.get("/api/public/rotations/{public_id}")
 def public_rotation(public_id: str) -> dict[str, Any]:
     with db_connection() as conn:
-        row = conn.execute("SELECT * FROM rotations WHERE public_id=? AND active=1", (public_id,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM rotations WHERE public_id=? AND active=1", (public_id,)
+        ).fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="TV rotation not found")
         rotation = _rotation_dict(row)
         dashboards = []
         for dashboard_id in rotation["dashboard_ids"]:
-            dashboard = conn.execute("SELECT * FROM dashboards WHERE id=?", (dashboard_id,)).fetchone()
+            dashboard = conn.execute(
+                "SELECT * FROM dashboards WHERE id=?", (dashboard_id,)
+            ).fetchone()
             if dashboard:
                 dashboards.append(_dashboard_preview(dashboard))
-    return {"name": rotation["name"], "interval_seconds": rotation["interval_seconds"], "dashboards": dashboards}
+    return {
+        "name": rotation["name"],
+        "interval_seconds": rotation["interval_seconds"],
+        "dashboards": dashboards,
+    }
 
 
 @app.get("/tv/{public_id}", response_class=HTMLResponse, include_in_schema=False)
 def tv_page(public_id: str) -> HTMLResponse:
     with db_connection() as conn:
-        row = conn.execute("SELECT id FROM rotations WHERE public_id=? AND active=1", (public_id,)).fetchone()
+        row = conn.execute(
+            "SELECT id FROM rotations WHERE public_id=? AND active=1", (public_id,)
+        ).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="TV rotation not found")
     html = (STATIC_DIR / "tv.html").read_text(encoding="utf-8").replace("__PUBLIC_ID__", public_id)
