@@ -17,7 +17,7 @@ import httpx
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-TEST_PORT = int(os.environ.get("GECKOBOARD_TEST_PORT", "8640"))
+TEST_PORT = int(os.environ.get("GECKOBOARD_TEST_PORT", "8670"))
 BASE_URL = f"http://127.0.0.1:{TEST_PORT}"
 TEST_DIR = ROOT / "data-test"
 DB_PATH = TEST_DIR / f"acceptance-{TEST_PORT}-{secrets.token_hex(4)}.db"
@@ -691,7 +691,7 @@ def test_large_request_body_is_rejected(service: Service) -> None:
     assert response.status_code == 413
 
 
-def test_30_service_default_port_is_8640() -> None:
+def test_30_service_default_port_is_8670() -> None:
     env = os.environ.copy()
     env.pop("GECKOBOARD_PORT", None)
     run = subprocess.run(
@@ -708,7 +708,7 @@ def test_30_service_default_port_is_8640() -> None:
         check=False,
     )
     assert run.returncode == 0, run.stderr
-    assert run.stdout.strip() == "8640"
+    assert run.stdout.strip() == "8670"
 
 
 def test_31_all_acceptance_requests_avoided_http_5xx(service: Service) -> None:

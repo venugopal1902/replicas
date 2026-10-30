@@ -21,7 +21,7 @@ base_override = os.environ.get("GECKOBOARD_BASE")
 TEST_PORT = int(
     os.environ.get(
         "GECKOBOARD_TEST_PORT",
-        str(urlparse(base_override or "http://127.0.0.1:8640").port or 8640),
+        str(urlparse(base_override or "http://127.0.0.1:8670").port or 8670),
     )
 )
 BASE = base_override or f"http://127.0.0.1:{TEST_PORT}"

@@ -17,7 +17,7 @@ class Settings:
     app_name: str = "Geckoboard Engine"
     version: str = "0.1.0"
     host: str = os.environ.get("GECKOBOARD_HOST", "127.0.0.1")
-    port: int = int(os.environ.get("GECKOBOARD_PORT", "8640"))
+    port: int = int(os.environ.get("GECKOBOARD_PORT", "8670"))
     db_path: Path = Path(
         os.environ.get("GECKOBOARD_DB_PATH", str(BASE_DIR / "data" / "geckoboard.db"))
     )

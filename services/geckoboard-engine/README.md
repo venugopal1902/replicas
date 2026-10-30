@@ -18,9 +18,9 @@ Then start the local service:
 uv run python scripts/run_server.py
 ```
 
-Admin console: `http://127.0.0.1:8640/`
+Admin console: `http://127.0.0.1:8670/`
 
-Health: `http://127.0.0.1:8640/health`
+Health: `http://127.0.0.1:8670/health`
 
 The default host is loopback only. To seed sample support and revenue data, run `uv run python scripts/seed_demo.py` after the first boot. The seed is idempotent and creates two datasets, two dashboards, and a public TV rotation. The rotation link is shown in the authenticated TV Rotations view, not printed by the seed script.
 
@@ -50,12 +50,12 @@ The push API follows the core Datasets API pattern: Basic Auth with the API key 
 ```bash
 curl -u "$GECKOBOARD_DATASET_API_KEY:" \
   -H "Content-Type: application/json" \
-  -X PUT http://127.0.0.1:8640/api/datasets/sales.by_day \
+  -X PUT http://127.0.0.1:8670/api/datasets/sales.by_day \
   -d '{"fields":{"date":{"type":"date","name":"Date","optional":false},"amount":{"type":"number","name":"Amount","optional":false}},"unique_by":["date"]}'
 
 curl -u "$GECKOBOARD_DATASET_API_KEY:" \
   -H "Content-Type: application/json" \
-  -X POST http://127.0.0.1:8640/api/datasets/sales.by_day/data \
+  -X POST http://127.0.0.1:8670/api/datasets/sales.by_day/data \
   -d '{"data":[{"date":"2026-05-21","amount":42}]}'
 ```
 
