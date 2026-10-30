@@ -26,7 +26,7 @@ Build order is top-down. Do not start a lower row while a higher row is TODO.
 | 2 | churn-buster | Churn Buster | $269+/mo | M | DONE | 21 | Dunning campaigns, Stripe-shaped webhook, recovery analytics, admin console, CSV. Port 8610 |
 | 3 | bannerbear-engine | Bannerbear | $49-299/mo | M | DONE | 15 pytest + E2E | Templates, async PNG renders, project keys, credit metering with 402 on empty. Port 8620. Built by hermes, verified + documented by chief |
 | 4 | zigpoll-engine | Zigpoll | $29+ UNVERIFIED | M | DONE | 21 | Four question types, public id split from admin auth, HMAC webhooks, HTTPS-only destinations. Port 8630. Built by hermes, verified by chief |
-| 5 | geckoboard-engine | Geckoboard | $79/319/mo | M | TODO | 0 | Custom datasets push API, widget composition, TV rotation mode. Port 8670 (8640 taken by mail-engine) |
+| 5 | geckoboard-engine | Geckoboard | $79/319/mo | M | VERIFY | 26+20+11 observed | Owner hermes (active writer). Chief executed 57 checks on :8670 and fixed 3 bugs; hermes re-took the tree at 05:59, adding a 31st test still failing (413 vs 422 body limit). Do not double-own |
 | 6 | baremetrics-engine | Baremetrics | UNVERIFIED | M/L | TODO | 0 | MRR/ARR metrics from Stripe, churn, forecasting. Port 8650 |
 | 7 | smile-engine | Smile.io | $15/79/199/mo | L | TODO | 0 | Points ledger, referrals, VIP tiers. Defer: ledger correctness + fraud controls. Port 8660 |
 
@@ -89,6 +89,9 @@ Newest first. One line per tick: `HH:MM | action | evidence`
 - T+02:00 | mail-engine FINISHED AND VERIFIED, infrastructure row BUILDING -> DONE, port 8640 (geckoboard moved to 8670) | routes/main/scripts/README/tests written, then executed: 24/24 unit, 18/18 live API (blocked-suppression path blocked=1, tracking pixel opened, e2e enroll->send->step advance, openapi 35 paths/47 ops, 0 5xx), 15/15 headless-Chrome UI (login, bad password, dashboard, campaign preview, leads search, inbox, mailboxes, settings, 0 JS exceptions). DB reseeded clean: 4 campaigns, 42 leads, 40 sends, health 200 on :8640
 - T+01:55 | fixed 2 test bugs found by the first run, not backend bugs | unauth check used the logged-in cookie jar (200 -> 401 with a clean client); blocked-path check suppressed the lead before enrolling so the send-time block was never exercised (now blocked=1)
 
+- T+02:20 | geckoboard-engine: chief tick found hermes's half-built tree, fixed 3 real bugs, executed 57 checks on :8670 | bugs: (1) partial unique index + `ON CONFLICT(dataset_id,unique_key)` without its `WHERE unique_key IS NOT NULL` guard -> every push to a `unique_by` dataset returned 500 (8 tests); (2) seeded widgets carry no `limit`, `_widget_result` indexed `widget["limit"]` -> seeded dashboard preview 500 and the console dashboard list died on "Request failed (500)"; (3) default port still 8640, moved to 8670 in config and tests. Evidence: 26/26 pytest, 20/20 live API (18 requests, 0 5xx, upsert total=2, replace total=1, preview value 7, 16 paths / 26 ops), 11/11 headless-Chrome UI (clear-cookie login, 3 tabs populated, no JS exceptions) = 57 passing
+- T+02:22 | geckoboard-engine ownership collision caught: hermes re-took the tree 05:59-06:03 (main.py 34.3k -> 37.1k, new README, 31st test) while chief was verifying | chief stood down on all geckoboard files; row left VERIFY with hermes as sole writer. Last full suite after hermes's edit: 31 errors at fixture boot + 1 fail (413 vs 422 body limit), i.e. mid-edit, not a regression chief can judge
+- T+02:22 | stale-uvicorn hazard: taskkill on the bash pid left the real uvicorn child holding 8670, so two "restarts" silently failed with WinError 10048 and I kept testing old code | resolve the actual PID first: `powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -like '*<service>*' }"`, kill the uv child too, then confirm no LISTENING line
 - T+02:10 | mail-engine independently RE-VERIFIED by chief-bot after the late cron tick | 24/24 unit + 18/18 live API executed, 42 requests zero 5xx, OpenAPI 35 paths/47 ops. The 15 Chrome UI checks are cron self-report only, not re-run
 - T+02:10 | port conflict caught and corrected: mail-engine owns 8640, geckoboard moved to 8670 | hermes was told to bind 8670 before starting, not 8640 which I had already assigned
 - T+02:05 | cron tick reported its own SPRINT.md edits as commit f4a5c3b, which was actually chief-bot's zigpoll commit that swept them in via git add -A | coordination lesson: never assume a commit hash in an agent report is that agent's own work
@@ -122,3 +125,11 @@ Next ranked row is 5 geckoboard-engine on :8670 (hermes), then 6 baremetrics-eng
 7 smile-engine :8660, both scoped by chief-bot before assignment.
 Every tick: verify the row above you is DONE before starting a new service, and record literal
 check counts - a subagent claim is not evidence.
+
+Resume rule for tick after T+02:22: geckoboard-engine is VERIFY and hermes is the sole writer.
+Chief must NOT edit files under services/geckoboard-engine while hermes is active (check mtimes;
+anything touched in the last 5 minutes means wait). Chief's contribution there is recorded and
+reproducible: tests/live_verify.py (20 checks) and tests/ui_smoke.mjs (11 checks). If hermes's
+suite is green on the next tick, run those two against a fresh :8670 server and mark DONE;
+if hermes has gone quiet with the 413 body-limit test still failing, chief fixes it then.
+Do not start baremetrics-engine :8650 until geckoboard is DONE.
