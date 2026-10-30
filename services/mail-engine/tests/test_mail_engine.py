@@ -225,10 +225,23 @@ def main() -> int:
 
         # 12. end-to-end flow: create campaign + step, add lead, enroll {"all":true}, POST send-next -> sent >= 1,
         #     then GET /api/sends?campaignId= shows the send row and the enrollment current_step advanced
+        # Give this check its own mailbox with headroom. The shared mailbox accumulates
+        # sent_today across runs, and send-next correctly refuses to send once that hits the
+        # daily limit, so reusing it made this check a function of run history.
+        d12_mb = client.post(
+            "/api/mailboxes",
+            headers=auth_headers,
+            json={"email": f"e2e_sender_{secrets.token_hex(4)}@example.com",
+                  "displayName": "E2E Sender", "dailyLimit": 100000},
+        ).json().get("mailbox", {})
+        e2e_mailbox_id = d12_mb.get("id", "")
+
         e2e_c = client.post(
             "/api/campaigns",
             headers=auth_headers,
-            json={"name": f"E2E Campaign {secrets.token_hex(4)}", "subject": "E2E Subj {{company}}", "body": "E2E Body"},
+            json={"name": f"E2E Campaign {secrets.token_hex(4)}", "subject": "E2E Subj {{company}}",
+                  "body": "E2E Body", "dailyLimit": 100000,
+                  "fromMailboxId": e2e_mailbox_id},
         ).json().get("campaign", {})
         e2e_cid = e2e_c.get("id", "")
 
@@ -239,17 +252,22 @@ def main() -> int:
         )
 
         e2e_lead_email = f"e2e_{secrets.token_hex(4)}@example.com"
-        client.post(
+        d12_lead = client.post(
             "/api/leads",
             headers=auth_headers,
             json={"email": e2e_lead_email, "firstName": "E2EUser", "company": "E2ECorp"},
-        )
+        ).json().get("lead", {})
+        e2e_lead_id = d12_lead.get("id", "")
 
         # Activate campaign
         client.post(f"/api/campaigns/{e2e_cid}/activate", headers=auth_headers)
 
-        # Enroll {"all": true}
-        r12_enr = client.post(f"/api/campaigns/{e2e_cid}/enroll", headers=auth_headers, json={"all": True})
+        # Enrol only this check's own lead. Enrolling {"all": true} pulled in every lead the
+        # workspace has accumulated, which made this check a function of run history rather
+        # than of the engine: once the mailbox daily limit was spent by earlier runs, sent
+        # dropped to 0 and the check rotted into a permanent failure.
+        r12_enr = client.post(f"/api/campaigns/{e2e_cid}/enroll", headers=auth_headers,
+                              json={"leadIds": [e2e_lead_id]})
         d12_enr = r12_enr.json() if r12_enr.status_code == 200 else {}
 
         # POST send-next

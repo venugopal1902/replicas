@@ -84,12 +84,36 @@ DEMO_ENV = {
                           "GECKOBOARD_DATASET_API_KEY": "local-demo-dataset-key"},
 }
 
-COUNTS = [
-    re.compile(r"PASSED\s+(\d+)\s+FAILED\s+(\d+)"),
-    re.compile(r"(\d+)/(\d+)\s+(?:unit |live )?checks passed", re.I),
-    re.compile(r"(\d+)\s+passed in"),
-    re.compile(r"(\d+)\s*/\s*(\d+)"),
-]
+def parse_counts(text: str) -> Optional[tuple]:
+    """Return (passed, total) for one suite's output.
+
+    Order matters. "PASSED 52 FAILED 0" means 52 passed and 0 failed, so total is 52, not 0.
+    A pytest line that only says "21 passed" has no failures, so total equals passed.
+    """
+    # explicit passed/failed pairs, in either spelling
+    for pattern in (
+        re.compile(r"PASSED\s+(\d+)\s+FAILED\s+(\d+)", re.I),
+        re.compile(r"(\d+)\s+passed[,\s]+(\d+)\s+failed", re.I),
+    ):
+        m = pattern.search(text)
+        if m:
+            passed, failed = int(m.group(1)), int(m.group(2))
+            return passed, passed + failed
+
+    # "N/M checks passed" / "VERIFIED N/M"
+    m = re.search(r"VERIFIED\s+(\d+)\s*/\s*(\d+)", text, re.I) or \
+        re.search(r"(\d+)\s*/\s*(\d+)\s+(?:unit |live )?checks passed", text, re.I)
+    if m:
+        return int(m.group(1)), int(m.group(2))
+
+    # pytest summary with only a passed count means zero failures
+    m = re.search(r"(\d+)\s+passed", text, re.I)
+    if m:
+        n = int(m.group(1))
+        failed = re.search(r"(\d+)\s+failed", text, re.I)
+        return n, n + (int(failed.group(1)) if failed else 0)
+
+    return None
 
 
 def health(port: int, timeout: float = 2.0) -> Optional[dict]:
@@ -109,17 +133,6 @@ def wait_up(port: int, seconds: float = 40.0) -> bool:
             return True
         time.sleep(0.7)
     return False
-
-
-def parse_counts(text: str) -> Optional[tuple]:
-    for pattern in COUNTS:
-        m = pattern.search(text)
-        if m:
-            groups = [int(g) for g in m.groups() if g is not None]
-            if len(groups) >= 2:
-                return groups[0], groups[1]
-            return groups[0], None
-    return None
 
 
 def run_checks(svc: Service) -> tuple:
