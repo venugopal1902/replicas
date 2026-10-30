@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Geckoboard Engine</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="Geckoboard Engine home"><span class="brand-mark">G</span><span>GECKOBOARD<span class="brand-sub">ENGINE</span></span></a>
+      <div class="workspace-label">WORKSPACE</div>
+      <div class="workspace"><span class="workspace-dot"></span> Aurora Operations <span class="chevron">⌄</span></div>
+      <nav id="nav" class="nav" aria-label="Main navigation">
+        <button class="nav-item active" data-tab="overview"><span>◫</span> Overview</button>
+        <button class="nav-item" data-tab="datasets"><span>▤</span> Datasets</button>
+        <button class="nav-item" data-tab="dashboards"><span>▦</span> Dashboards</button>
+        <button class="nav-item" data-tab="rotations"><span>▣</span> TV rotations</button>
+      </nav>
+      <div class="sidebar-bottom"><div class="live-dot"></div> Local workspace <span class="version">v0.1.0</span></div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar"><div><div class="eyebrow">DATA THAT MOVES</div><h1 id="page-title">Overview</h1></div><div class="top-actions"><span id="signed-in" class="signed-in hidden">Signed in</span><button id="logout" class="button ghost hidden" type="button">Sign out</button></div></header>
+
+      <section id="login-view" class="login-wrap">
+        <div class="login-card">
+          <div class="eyebrow">ADMIN ACCESS</div><h2>Welcome back.</h2><p class="muted">Sign in to manage datasets, dashboards, and screens.</p>
+          <form id="login-form"><label>Email<input id="login-email" type="email" autocomplete="username" required></label><label>Password<input id="login-password" type="password" autocomplete="current-password" required></label><button class="button primary full" type="submit">Sign in <span>→</span></button><p id="login-error" class="error" role="status"></p></form>
+          <p class="microcopy">Admin password is configured by the operator at first boot.</p>
+        </div>
+      </section>
+
+      <section id="workspace" class="hidden">
+        <section class="tab-panel" data-panel="overview">
+          <div class="welcome-row"><div><div class="eyebrow">YOUR DATA, AT A GLANCE</div><h2>Build a screen worth looking at.</h2><p class="muted">Push custom data, compose widgets, then put the dashboard on a TV.</p></div><div class="signal-card"><div class="signal-line"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span>LIVE DATA FLOW</span></div></div>
+          <div id="overview-stats" class="stats-grid"></div>
+          <div class="section-head"><div><h3>Quick start</h3><p class="muted">Three steps from raw data to the office screen.</p></div></div>
+          <div class="quick-grid"><button class="quick-card" data-go="datasets"><span class="quick-number">01</span><strong>Define a dataset</strong><small>Give your data a typed, reusable schema.</small><span class="arrow">↗</span></button><button class="quick-card" data-go="dashboards"><span class="quick-number">02</span><strong>Compose widgets</strong><small>Turn records into useful metrics.</small><span class="arrow">↗</span></button><button class="quick-card" data-go="rotations"><span class="quick-number">03</span><strong>Launch a TV loop</strong><small>Rotate dashboards on a shareable screen.</small><span class="arrow">↗</span></button></div>
+          <div class="callout"><span class="callout-icon">i</span><div><strong>Data API and admin access are separate.</strong><p>Your dataset push key is sent only to authenticated API requests. It is never displayed in the dashboard list.</p></div></div>
+        </section>
+
+        <section class="tab-panel hidden" data-panel="datasets">
+          <div class="section-head"><div><div class="eyebrow">CUSTOM DATASETS</div><h2>Define once. Push whenever.</h2><p class="muted">Typed schemas keep visualizations honest and data predictable.</p></div><button id="rotate-key" class="button secondary" type="button">Rotate push key</button></div>
+          <div id="key-result" class="key-result hidden"><strong>New API key, shown once</strong><code id="new-key"></code><button id="copy-key" class="button ghost small" type="button">Copy</button></div>
+          <div class="two-col">
+            <div class="panel"><div class="panel-title"><span class="icon-box">＋</span><div><h3>Create dataset</h3><p class="muted">Schema fields follow the Datasets API format.</p></div></div>
+              <form id="dataset-form" class="stack-form"><label>Dataset ID<input id="dataset-id" placeholder="sales.by_day" required maxlength="100"></label><label>Fields JSON<textarea id="dataset-fields" rows="7" spellcheck="false">{"date":{"type":"date","name":"Date","optional":false},"amount":{"type":"number","name":"Amount","optional":false},"channel":{"type":"string","name":"Channel","optional":true}}</textarea></label><label>Unique by <span class="muted">comma-separated, optional</span><input id="dataset-unique" placeholder="date,channel"></label><button class="button primary" type="submit">Create dataset <span>→</span></button><p id="dataset-message" class="form-message"></p></form>
+            </div>
+            <div class="panel"><div class="panel-title"><span class="icon-box">⇧</span><div><h3>Push data</h3><p class="muted">Basic Auth uses your Datasets API key as the username.</p></div></div><div class="code-block"><span class="code-label">APPEND RECORDS</span><pre id="push-example">curl -u "$GECKOBOARD_DATASET_API_KEY:" \\
+  -H "Content-Type: application/json" \\
+  -X POST http://127.0.0.1:8670/api/datasets/your.dataset/data \\\
+  -d '{"data":[{"date":"2026-05-21","amount":42}]}'</pre></div><div class="push-notes"><span>POST appends and upserts by <code>unique_by</code>.</span><span>PUT replaces the dataset's records.</span><span>API key is stored as a hash, never returned by list calls.</span></div></div>
+          </div>
+          <div class="section-head compact"><div><h3>Your datasets</h3><p class="muted">Schema and row count, without exposing credentials.</p></div><button id="refresh-datasets" class="button ghost small" type="button">Refresh</button></div>
+          <div id="dataset-list" class="list-grid"></div>
+        </section>
+
+        <section class="tab-panel hidden" data-panel="dashboards">
+          <div class="section-head"><div><div class="eyebrow">WIDGET COMPOSITION</div><h2>Make the metric make sense.</h2><p class="muted">Build a dashboard from independent, schema-aware widgets.</p></div></div>
+          <div class="two-col dashboard-builder">
+            <div class="panel"><div class="panel-title"><span class="icon-box">▦</span><div><h3>New dashboard</h3><p class="muted">Add widgets, then save the composition.</p></div></div>
+              <form id="dashboard-form" class="stack-form"><label>Dashboard name<input id="dashboard-name" placeholder="Weekly operations" required maxlength="100"></label><div class="widget-compose"><div class="compose-head"><strong>Widget <span id="widget-count">0</span></strong><button id="add-widget" class="button ghost small" type="button">+ Add widget</button></div><label>Dataset<select id="widget-dataset" required></select></label><div class="form-row"><label>Visualization<select id="widget-type"><option value="number">Number</option><option value="line">Line chart</option><option value="column">Column chart</option><option value="bar">Bar chart</option><option value="leaderboard">Leaderboard</option><option value="table">Table</option></select></label><label>Title<input id="widget-title" placeholder="Open tickets"></label></div><div class="form-row"><label>Metric field<select id="widget-metric"></select></label><label>Aggregate<select id="widget-aggregate"><option value="sum">Sum</option><option value="avg">Average</option><option value="min">Minimum</option><option value="max">Maximum</option><option value="latest">Latest</option><option value="count">Count</option></select></label></div><div class="form-row"><label>Group by<select id="widget-dimension"><option value="">None</option></select></label><label>Time field<select id="widget-time"><option value="">None</option></select></label></div><div id="widget-draft" class="draft-list"></div></div><button class="button primary" type="submit">Save dashboard <span>→</span></button><p id="dashboard-message" class="form-message"></p></form>
+            </div>
+            <div class="panel dashboard-preview-panel"><div class="panel-title"><span class="icon-box">◉</span><div><h3>Saved dashboards</h3><p class="muted">Live previews are computed from raw dataset records.</p></div></div><div id="dashboard-list" class="dashboard-list"></div></div>
+          </div>
+        </section>
+
+        <section class="tab-panel hidden" data-panel="rotations">
+          <div class="section-head"><div><div class="eyebrow">TV MODE</div><h2>Keep the room in the loop.</h2><p class="muted">Rotate selected dashboards on a full-screen, shareable display.</p></div></div>
+          <div class="two-col">
+            <div class="panel"><div class="panel-title"><span class="icon-box">▣</span><div><h3>Create TV rotation</h3><p class="muted">Pick at least one dashboard and set the dwell time.</p></div></div><form id="rotation-form" class="stack-form"><label>Rotation name<input id="rotation-name" placeholder="Office screens" required maxlength="100"></label><label>Dashboards<select id="rotation-dashboards" multiple size="5"></select></label><label>Seconds per dashboard<input id="rotation-interval" type="number" value="30" min="10" max="600"></label><button class="button primary" type="submit">Create rotation <span>→</span></button><p id="rotation-message" class="form-message"></p></form></div>
+            <div class="panel"><div class="panel-title"><span class="icon-box">↻</span><div><h3>Screen loops</h3><p class="muted">Anyone with a public screen link can view its selected dashboards.</p></div></div><div id="rotation-list" class="rotation-list"></div></div>
+          </div>
+          <div class="callout warning"><span class="callout-icon">!</span><div><strong>Public screen links are public.</strong><p>Only add dashboards whose data is safe to display to anyone who has the link.</p></div></div>
+        </section>
+      </section>
+      <footer class="footer"><span>GECKOBOARD ENGINE</span><span>Custom data in. Clear decisions out.</span></footer>
+    </main>
+  </div>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

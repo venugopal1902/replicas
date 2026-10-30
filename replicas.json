@@ -1513,6 +1513,314 @@
         "intro": "Admin console at / and public embed at /s/<public_id> on port 8630.",
         "images": []
       }
+    },
+    {
+      "slug": "mail-engine",
+      "name": "Mail Engine",
+      "replaces": "Instantly / Lemlist",
+      "replaces_url": "https://instantly.ai/pricing",
+      "tagline": "Cold email campaigns, sequences, inbox and tracking. Self-hosted, simulate-mode by default.",
+      "status": "stable",
+      "version": "0.1.0",
+      "language": "Python 3.12",
+      "license": "MIT",
+      "repo_path": "services/mail-engine",
+      "stack": [
+        "FastAPI",
+        "SQLAlchemy 2",
+        "SQLite",
+        "APScheduler",
+        "Uvicorn"
+      ],
+      "platforms": [],
+      "summary": "Instantly and Lemlist sell cold-email sending from roughly $30 to $100+ per month, priced by mailbox count and lead volume. This engine reproduces the working surface: campaigns with ordered steps, lead import, enrolment, send-next execution, suppressions, bounce/unsubscribe handling, an inbox with replies, open and click tracking, mailbox warmup simulation, workspace analytics, and an MCP endpoint exposing eight tools. Sending defaults to simulate mode, so nothing leaves the machine until SMTP is configured.",
+      "highlights": [
+        "42 checks executed by the maintainer: 24 unit + 18 live API",
+        "47 API operations across 35 paths",
+        "Open pixel and click tracking",
+        "Suppression list honoured at send time",
+        "Inbox with replies, plus unsubscribe page",
+        "8 MCP tools for agent use",
+        "Simulate mode by default, never fakes a delivery"
+      ],
+      "features": [
+        {
+          "title": "Campaigns",
+          "body": "Ordered steps with delays, activate and pause, preview and send-next execution."
+        },
+        {
+          "title": "Leads",
+          "body": "Create, patch, delete and bulk import, then enrol into campaigns."
+        },
+        {
+          "title": "Deliverability",
+          "body": "Suppression list checked at send time, unsubscribe tokens, bounce-path handling."
+        },
+        {
+          "title": "Tracking",
+          "body": "Open pixel and click redirect endpoints, both recorded per send."
+        },
+        {
+          "title": "Inbox",
+          "body": "List received messages, mark read, reply."
+        },
+        {
+          "title": "Warmup",
+          "body": "Mailbox warmup simulation with a run endpoint and progress state."
+        },
+        {
+          "title": "MCP",
+          "body": "Eight tools: list/create campaigns, list/add leads, enrol, send-next, analytics."
+        }
+      ],
+      "prereqs": [
+        "Python 3.12 or newer",
+        "uv (Astral)",
+        "No SMTP account needed for simulate mode"
+      ],
+      "install": [
+        {
+          "title": "Clone",
+          "desc": "Get the source.",
+          "lang": "bash",
+          "code": "git clone https://github.com/venugopal1902/replicas.git\ncd replicas/services/mail-engine"
+        },
+        {
+          "title": "Install",
+          "desc": "Create the environment.",
+          "lang": "bash",
+          "code": "uv sync"
+        },
+        {
+          "title": "Run",
+          "desc": "Console on port 8640.",
+          "lang": "bash",
+          "code": "uv run python scripts/run_server.py"
+        }
+      ],
+      "urls": [
+        {
+          "label": "Console",
+          "value": "http://127.0.0.1:8640/"
+        },
+        {
+          "label": "Health",
+          "value": "http://127.0.0.1:8640/health"
+        },
+        {
+          "label": "OpenAPI docs",
+          "value": "http://127.0.0.1:8640/docs"
+        },
+        {
+          "label": "MCP tools",
+          "value": "http://127.0.0.1:8640/mcp/tools"
+        }
+      ],
+      "usage": [
+        {
+          "title": "Run the whole loop from the CLI",
+          "desc": "Login, create a campaign, add a step, add a lead, enrol, then send the next due step.",
+          "code": "TOKEN=$(curl -s -X POST http://127.0.0.1:8640/api/auth/login \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"email\":\"admin@mailengine.local\",\"password\":\"mailengine123\"}' | jq -r .token)\n\nCID=$(curl -s -X POST http://127.0.0.1:8640/api/campaigns \\\n  -H \"Authorization: Bearer $TOKEN\" -H 'Content-Type: application/json' \\\n  -d '{\"name\":\"Q4 outbound\"}' | jq -r .id)\n\ncurl -s -X POST http://127.0.0.1:8640/api/campaigns/$CID/enroll \\\n  -H \"Authorization: Bearer $TOKEN\" -H 'Content-Type: application/json' \\\n  -d '{\"lead_ids\":[]}'\n\ncurl -s -X POST http://127.0.0.1:8640/api/campaigns/$CID/send-next \\\n  -H \"Authorization: Bearer $TOKEN\"",
+          "lang": "bash"
+        }
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/health",
+          "desc": "Health and send mode"
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/login",
+          "desc": "Admin token"
+        },
+        {
+          "method": "GET",
+          "path": "/api/campaigns",
+          "desc": "List campaigns"
+        },
+        {
+          "method": "POST",
+          "path": "/api/campaigns",
+          "desc": "Create a campaign"
+        },
+        {
+          "method": "POST",
+          "path": "/api/campaigns/{id}/steps",
+          "desc": "Add a sequence step"
+        },
+        {
+          "method": "POST",
+          "path": "/api/campaigns/{id}/activate",
+          "desc": "Activate a campaign"
+        },
+        {
+          "method": "POST",
+          "path": "/api/campaigns/{id}/enroll",
+          "desc": "Enrol leads"
+        },
+        {
+          "method": "POST",
+          "path": "/api/campaigns/{id}/send-next",
+          "desc": "Send the next due step"
+        },
+        {
+          "method": "POST",
+          "path": "/api/campaigns/{id}/preview",
+          "desc": "Render a step preview"
+        },
+        {
+          "method": "GET",
+          "path": "/api/leads",
+          "desc": "List leads"
+        },
+        {
+          "method": "POST",
+          "path": "/api/leads/import",
+          "desc": "Bulk import leads"
+        },
+        {
+          "method": "GET",
+          "path": "/api/sends",
+          "desc": "Send log"
+        },
+        {
+          "method": "GET",
+          "path": "/api/inbox",
+          "desc": "Inbox list"
+        },
+        {
+          "method": "POST",
+          "path": "/api/inbox/{id}/reply",
+          "desc": "Reply to a message"
+        },
+        {
+          "method": "GET",
+          "path": "/api/mailboxes",
+          "desc": "Sending mailboxes"
+        },
+        {
+          "method": "GET",
+          "path": "/api/suppressions",
+          "desc": "Suppression list"
+        },
+        {
+          "method": "GET",
+          "path": "/api/warmup",
+          "desc": "Warmup state"
+        },
+        {
+          "method": "POST",
+          "path": "/api/warmup/run",
+          "desc": "Advance warmup"
+        },
+        {
+          "method": "GET",
+          "path": "/api/tracking/open/{id}.gif",
+          "desc": "Open tracking pixel"
+        },
+        {
+          "method": "GET",
+          "path": "/api/tracking/click/{id}",
+          "desc": "Click tracking redirect"
+        },
+        {
+          "method": "GET",
+          "path": "/api/unsubscribe/{token}",
+          "desc": "Unsubscribe page"
+        },
+        {
+          "method": "GET",
+          "path": "/api/analytics/overview",
+          "desc": "Workspace analytics"
+        },
+        {
+          "method": "GET",
+          "path": "/mcp/tools",
+          "desc": "List MCP tools"
+        },
+        {
+          "method": "POST",
+          "path": "/mcp/call",
+          "desc": "Call an MCP tool"
+        }
+      ],
+      "mcp_tools": [
+        {
+          "name": "list_campaigns",
+          "desc": "List campaigns"
+        },
+        {
+          "name": "get_campaign",
+          "desc": "Read one campaign"
+        },
+        {
+          "name": "create_campaign",
+          "desc": "Create a campaign"
+        },
+        {
+          "name": "list_leads",
+          "desc": "List leads"
+        },
+        {
+          "name": "add_lead",
+          "desc": "Add a lead"
+        },
+        {
+          "name": "enroll_leads",
+          "desc": "Enrol leads in a campaign"
+        },
+        {
+          "name": "send_next",
+          "desc": "Send the next due step"
+        },
+        {
+          "name": "analytics_overview",
+          "desc": "Workspace analytics"
+        }
+      ],
+      "verify": {
+        "title": "Two suites, both executed by the maintainer",
+        "code": "cd services/mail-engine\nuv run python tests/test_units.py       # 24/24\nuv run python scripts/run_server.py &   # then, against :8640\nuv run python tests/test_mail_engine.py # 18/18\n\n# recorded: 24/24 unit, 18/18 live, 42 requests, zero 5xx, OpenAPI 35 paths / 47 operations"
+      },
+      "notes": [
+        "Sending defaults to simulate mode. Nothing is transmitted until SMTP is configured.",
+        "The 15 headless-Chrome UI checks in the repo are self-reported by the build agent and were not re-run by the maintainer.",
+        "Instantly and Lemlist tier pricing is not reproduced here; no price ladder is claimed.",
+        "Warmup is simulated, not a real deliverability reputation system."
+      ],
+      "faq": [
+        {
+          "q": "Will it send real email?",
+          "a": "Only if you configure SMTP. In the default simulate mode every send is recorded without transmission."
+        },
+        {
+          "q": "Does it replace an inbox provider?",
+          "a": "No. It models an inbox for campaign replies. It does not connect to Gmail or Outlook."
+        }
+      ],
+      "monetization": [
+        {
+          "tier": "Self-host",
+          "price": "$0",
+          "detail": "The incumbents price per mailbox and lead volume. Run unlimited mailboxes on your own box."
+        },
+        {
+          "tier": "Agency sending",
+          "price": "Your price",
+          "detail": "Host per client with their own suppressions and tracking domain."
+        },
+        {
+          "tier": "MCP access",
+          "price": "Add-on",
+          "detail": "The eight MCP tools let an agent drive campaigns, which the incumbents do not offer self-hosted."
+        }
+      ],
+      "ui": {
+        "intro": "Console at / on port 8640.",
+        "images": []
+      }
     }
   ]
 }

@@ -1,0 +1,24 @@
+[project]
+name = "geckoboard-engine"
+version = "0.1.0"
+description = "Self-hosted custom datasets, dashboards, and TV rotations"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn>=0.30.0",
+  "pydantic>=2.8.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.3.0", "httpx>=0.27.0", "ruff>=0.6.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+ignore = ["B008"]

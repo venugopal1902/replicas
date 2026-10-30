@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mail Engine · Replicas</title>
+<meta name="description" content="Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.">
+<meta property="og:title" content="Mail Engine · Replicas">
+<meta property="og:description" content="Clean-room, production-grade replicas of commercial SaaS APIs and tools. Full source, install guides, API references, and monetization notes. Own your stack.">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236ee7b7'/><text x='16' y='23' font-size='19' font-family='monospace' font-weight='bold' text-anchor='middle' fill='%23061010'>R</text></svg>">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html">
+      <span class="logo">R</span>
+      <span>Replicas</span>
+    </a>
+    <div class="nav-links">
+      <a href="../index.html#services">Services</a>
+      <a href="../index.html#how">How it works</a>
+      <a href="../index.html#stack">Tech</a>
+      <a class="gh-btn" href="https://github.com/venugopal1902/replicas">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div class="doc">
+    <aside class="side">
+      <h5>On this page</h5>
+      <ul><li><a href="#overview">Overview</a></li><li><a href="#ui">Interface</a></li><li><a href="#install">Install</a></li><li><a href="#usage">Usage</a></li><li><a href="#api">API reference</a></li><li><a href="#mcp">MCP tools</a></li><li><a href="#monetize">Monetize</a></li><li><a href="#notes">Operational notes</a></li><li><a href="#faq">FAQ</a></li><h5>Source</h5><ul><li><a href="https://github.com/venugopal1902/replicas/tree/main/services/mail-engine">Repository</a></li></ul></ul>
+    </aside>
+    <article class="content">
+      <a class="back" href="../index.html">&larr; All services</a>
+      <h1>Mail Engine</h1>
+      <p class="lede" style="font-size:17px">Cold email campaigns, sequences, inbox and tracking. Self-hosted, simulate-mode by default.</p>
+      <div class="doc-meta">
+        <span>Replaces <b>Instantly / Lemlist</b></span>
+        <span>Version <b>0.1.0</b></span>
+        <span>License <b>MIT</b></span>
+        <span>Runtime <b>Python 3.12</b></span>
+      </div>
+      <h2 id="overview">Overview<a class="anchor-link" href="#overview">#</a></h2><p>Instantly and Lemlist sell cold-email sending from roughly $30 to $100+ per month, priced by mailbox count and lead volume. This engine reproduces the working surface: campaigns with ordered steps, lead import, enrolment, send-next execution, suppressions, bounce/unsubscribe handling, an inbox with replies, open and click tracking, mailbox warmup simulation, workspace analytics, and an MCP endpoint exposing eight tools. Sending defaults to simulate mode, so nothing leaves the machine until SMTP is configured.</p><div class="pill-row"><span class="chip">replaces Instantly / Lemlist</span><span class="chip">v0.1.0</span><span class="chip">MIT</span><span class="chip">Python 3.12</span></div><h3>What you get</h3><ul><li>42 checks executed by the maintainer: 24 unit + 18 live API</li><li>47 API operations across 35 paths</li><li>Open pixel and click tracking</li><li>Suppression list honoured at send time</li><li>Inbox with replies, plus unsubscribe page</li><li>8 MCP tools for agent use</li><li>Simulate mode by default, never fakes a delivery</li></ul><div class="feature-grid"><div class="feature"><h4>Campaigns</h4><p>Ordered steps with delays, activate and pause, preview and send-next execution.</p></div><div class="feature"><h4>Leads</h4><p>Create, patch, delete and bulk import, then enrol into campaigns.</p></div><div class="feature"><h4>Deliverability</h4><p>Suppression list checked at send time, unsubscribe tokens, bounce-path handling.</p></div><div class="feature"><h4>Tracking</h4><p>Open pixel and click redirect endpoints, both recorded per send.</p></div><div class="feature"><h4>Inbox</h4><p>List received messages, mark read, reply.</p></div><div class="feature"><h4>Warmup</h4><p>Mailbox warmup simulation with a run endpoint and progress state.</p></div><div class="feature"><h4>MCP</h4><p>Eight tools: list/create campaigns, list/add leads, enrol, send-next, analytics.</p></div></div><h2 id="ui">Interface<a class="anchor-link" href="#ui">#</a></h2><p>Console at / on port 8640.</p><div class="shots"></div><h2 id="install">Install<a class="anchor-link" href="#install">#</a></h2><p>From a clean machine to a running server in four commands.</p><h3>Requirements</h3><ul><li>Python 3.12 or newer</li><li>uv (Astral)</li><li>No SMTP account needed for simulate mode</li></ul><h3>Step 1 &middot; Clone</h3><p>Get the source.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">git clone https://github.com/venugopal1902/replicas.git
+cd replicas/services/mail-engine</code></pre></div><h3>Step 2 &middot; Install</h3><p>Create the environment.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">uv sync</code></pre></div><h3>Step 3 &middot; Run</h3><p>Console on port 8640.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">uv run python scripts/run_server.py</code></pre></div><h3>Two suites, both executed by the maintainer</h3><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">cd services/mail-engine
+uv run python tests/test_units.py       # 24/24
+uv run python scripts/run_server.py &amp;   # then, against :8640
+uv run python tests/test_mail_engine.py # 18/18
+
+# recorded: 24/24 unit, 18/18 live, 42 requests, zero 5xx, OpenAPI 35 paths / 47 operations</code></pre></div><div class="table-wrap"><table><thead><tr><th>Surface</th><th>URL</th></tr></thead><tbody><tr><td>Console</td><td><code>http://127.0.0.1:8640/</code></td></tr><tr><td>Health</td><td><code>http://127.0.0.1:8640/health</code></td></tr><tr><td>OpenAPI docs</td><td><code>http://127.0.0.1:8640/docs</code></td></tr><tr><td>MCP tools</td><td><code>http://127.0.0.1:8640/mcp/tools</code></td></tr></tbody></table></div><h2 id="usage">Usage<a class="anchor-link" href="#usage">#</a></h2><h3>Run the whole loop from the CLI</h3><p>Login, create a campaign, add a step, add a lead, enrol, then send the next due step.</p><div class="codeblock"><button class="copy" data-copy aria-label="Copy code">Copy</button><pre><code class="lang-bash">TOKEN=$(curl -s -X POST http://127.0.0.1:8640/api/auth/login \
+  -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;email&quot;:&quot;admin@mailengine.local&quot;,&quot;password&quot;:&quot;mailengine123&quot;}&#x27; | jq -r .token)
+
+CID=$(curl -s -X POST http://127.0.0.1:8640/api/campaigns \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;name&quot;:&quot;Q4 outbound&quot;}&#x27; | jq -r .id)
+
+curl -s -X POST http://127.0.0.1:8640/api/campaigns/$CID/enroll \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;lead_ids&quot;:[]}&#x27;
+
+curl -s -X POST http://127.0.0.1:8640/api/campaigns/$CID/send-next \
+  -H &quot;Authorization: Bearer $TOKEN&quot;</code></pre></div><h2 id="api">API reference<a class="anchor-link" href="#api">#</a></h2><div class="table-wrap"><table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td><span class="method get">GET</span></td><td><code>/health</code></td><td>Health and send mode</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/auth/login</code></td><td>Admin token</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/campaigns</code></td><td>List campaigns</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/campaigns</code></td><td>Create a campaign</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/campaigns/{id}/steps</code></td><td>Add a sequence step</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/campaigns/{id}/activate</code></td><td>Activate a campaign</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/campaigns/{id}/enroll</code></td><td>Enrol leads</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/campaigns/{id}/send-next</code></td><td>Send the next due step</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/campaigns/{id}/preview</code></td><td>Render a step preview</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/leads</code></td><td>List leads</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/leads/import</code></td><td>Bulk import leads</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/sends</code></td><td>Send log</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/inbox</code></td><td>Inbox list</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/inbox/{id}/reply</code></td><td>Reply to a message</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/mailboxes</code></td><td>Sending mailboxes</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/suppressions</code></td><td>Suppression list</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/warmup</code></td><td>Warmup state</td></tr><tr><td><span class="method post">POST</span></td><td><code>/api/warmup/run</code></td><td>Advance warmup</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/tracking/open/{id}.gif</code></td><td>Open tracking pixel</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/tracking/click/{id}</code></td><td>Click tracking redirect</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/unsubscribe/{token}</code></td><td>Unsubscribe page</td></tr><tr><td><span class="method get">GET</span></td><td><code>/api/analytics/overview</code></td><td>Workspace analytics</td></tr><tr><td><span class="method get">GET</span></td><td><code>/mcp/tools</code></td><td>List MCP tools</td></tr><tr><td><span class="method post">POST</span></td><td><code>/mcp/call</code></td><td>Call an MCP tool</td></tr></tbody></table></div><h2 id="mcp">MCP tools<a class="anchor-link" href="#mcp">#</a></h2><p>Any MCP-capable agent that connects to the endpoint gets these tools with no extra wiring.</p><div class="table-wrap"><table><thead><tr><th>Tool</th><th>What it does</th></tr></thead><tbody><tr><td><code>list_campaigns</code></td><td>List campaigns</td></tr><tr><td><code>get_campaign</code></td><td>Read one campaign</td></tr><tr><td><code>create_campaign</code></td><td>Create a campaign</td></tr><tr><td><code>list_leads</code></td><td>List leads</td></tr><tr><td><code>add_lead</code></td><td>Add a lead</td></tr><tr><td><code>enroll_leads</code></td><td>Enrol leads in a campaign</td></tr><tr><td><code>send_next</code></td><td>Send the next due step</td></tr><tr><td><code>analytics_overview</code></td><td>Workspace analytics</td></tr></tbody></table></div><h2 id="monetize">Monetize<a class="anchor-link" href="#monetize">#</a></h2><p>The billing layer is built in. Keys carry a plan, a credit balance and an hourly ceiling, so you can resell access without writing auth code.</p><div class="price-grid"><div class="price"><h4>Self-host</h4><b>$0</b><p>The incumbents price per mailbox and lead volume. Run unlimited mailboxes on your own box.</p></div><div class="price"><h4>Agency sending</h4><b>Your price</b><p>Host per client with their own suppressions and tracking domain.</p></div><div class="price"><h4>MCP access</h4><b>Add-on</b><p>The eight MCP tools let an agent drive campaigns, which the incumbents do not offer self-hosted.</p></div></div><div class="callout"><b>Ship it publicly:</b> put the service behind Caddy or Nginx with TLS, point a subdomain at it, then hand clients <code>https://api.yourdomain.com/v2</code> and their own key.</div><h2 id="notes">Operational notes<a class="anchor-link" href="#notes">#</a></h2><div class="callout warn"><b>Read before going live.</b> These are the things that break in production.</div><ul><li>Sending defaults to simulate mode. Nothing is transmitted until SMTP is configured.</li><li>The 15 headless-Chrome UI checks in the repo are self-reported by the build agent and were not re-run by the maintainer.</li><li>Instantly and Lemlist tier pricing is not reproduced here; no price ladder is claimed.</li><li>Warmup is simulated, not a real deliverability reputation system.</li></ul><h2 id="faq">FAQ<a class="anchor-link" href="#faq">#</a></h2><details><summary>Will it send real email?</summary><p>Only if you configure SMTP. In the default simulate mode every send is recorded without transmission.</p></details><details><summary>Does it replace an inbox provider?</summary><p>No. It models an inbox for campaign replies. It does not connect to Gmail or Outlook.</p></details>
+    </article>
+  </div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>&copy; Gubbala Venu Gopal</span>
+    <span>Replicas &middot; self-hosted replacements</span>
+    <span class="sp"><a href="https://github.com/venugopal1902/replicas">Source on GitHub</a></span>
+  </div>
+</footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
