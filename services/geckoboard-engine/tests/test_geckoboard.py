@@ -141,6 +141,7 @@ def service() -> Service:
         process.wait(timeout=5)
         client.close()
         server_log.close()
+        shutil.rmtree(TEST_DIR, ignore_errors=True)
         pytest.fail(
             f"Geckoboard test server did not become ready on GECKOBOARD_TEST_PORT {TEST_PORT}"
         )
@@ -162,8 +163,7 @@ def service() -> Service:
         process.kill()
         process.wait(timeout=5)
     server_log.close()
-    if os.environ.get("KEEP_GECKOBOARD_TEST_LOG") != "1":
-        shutil.rmtree(TEST_DIR, ignore_errors=True)
+    shutil.rmtree(TEST_DIR, ignore_errors=True)
 
 
 def _basic_key(service: Service) -> tuple[str, str]:
@@ -691,5 +691,25 @@ def test_large_request_body_is_rejected(service: Service) -> None:
     assert response.status_code == 413
 
 
-def test_30_all_acceptance_requests_avoided_http_5xx(service: Service) -> None:
+def test_30_service_default_port_is_8640() -> None:
+    env = os.environ.copy()
+    env.pop("GECKOBOARD_PORT", None)
+    run = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from geckoboard_engine.config import settings; print(settings.port)",
+        ],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=15,
+        check=False,
+    )
+    assert run.returncode == 0, run.stderr
+    assert run.stdout.strip() == "8640"
+
+
+def test_31_all_acceptance_requests_avoided_http_5xx(service: Service) -> None:
     assert not [code for code in service.seen_statuses if code >= 500]

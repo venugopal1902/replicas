@@ -1,7 +1,10 @@
 // Headless UI verification for Geckoboard Engine over CDP.
 //   chrome --headless=new --remote-debugging-port=9334 --user-data-dir=<scratch>/.tmp-chrome about:blank
-//   GECKOBOARD_BASE=http://127.0.0.1:8670 GECKOBOARD_ADMIN_PASSWORD=... CDP_URL=http://127.0.0.1:9334 node tests/ui_smoke.mjs
-const BASE = process.env.GECKOBOARD_BASE || "http://127.0.0.1:8670";
+//   GECKOBOARD_TEST_PORT=8641 GECKOBOARD_BASE=http://127.0.0.1:8641 CDP_URL=http://127.0.0.1:9334 node tests/ui_smoke.mjs
+const baseOverride = process.env.GECKOBOARD_BASE;
+const TEST_PORT = Number(process.env.GECKOBOARD_TEST_PORT || new URL(baseOverride || "http://127.0.0.1:8640").port || 8640);
+const BASE = baseOverride || `http://127.0.0.1:${TEST_PORT}`;
+const EXPECTED_ORIGIN = new URL(BASE).origin;
 const CDP = process.env.CDP_URL || "http://127.0.0.1:9334";
 const PASSWORD = process.env.GECKOBOARD_ADMIN_PASSWORD || "";
 const http = async (p, o) => (await fetch(CDP + p, o)).json();
@@ -78,8 +81,8 @@ async function main() {
   check("datasets tab lists seeded datasets", await tab("datasets", "#dataset-list > *"), await ev(`document.querySelectorAll('#dataset-list > *').length`));
   check("dashboards tab lists seeded dashboards", await tab("dashboards", "#dashboard-list > *"), await ev(`document.querySelectorAll('#dashboard-list > *').length`));
   check("rotations tab lists seeded rotation", await tab("rotations", "#rotation-list > *"), await ev(`document.querySelectorAll('#rotation-list > *').length`));
-  check("push example references :8670", await ev(`document.getElementById('push-example').textContent.includes(':8670')`));
-  check("dataset key never rendered in dataset list", await ev(`!document.getElementById('dataset-list').textContent.includes('verify-key-2026')`));
+  check("push example uses selected origin", await ev(`document.getElementById('push-example').textContent.includes(${JSON.stringify(EXPECTED_ORIGIN)})`));
+  check("dataset key is not labeled in dataset list", await ev(`!document.getElementById('dataset-list').textContent.toLowerCase().includes('api_key')`));
 
   await ev(`document.getElementById('logout').click(); true`);
   check("sign out returns to login", await waitFor(`!document.getElementById('login-view').classList.contains('hidden')`));

@@ -17,6 +17,6 @@ Build a locally runnable Geckoboard-inspired service at `services/geckoboard-eng
 4. **Verification**: at least 12 executable checks, Ruff, compileall, clean test DB and owned server, verify port state and report any live-port conflict without touching its process.
 
 ## Risks
-- Port 8640 was seen as occupied during an initial probe but later refused a health connection. Re-check immediately before any bind; use an approved free test override, never kill an unknown listener.
+- Port 8640 currently serves a live Mail Engine (`/health` returns HTTP 200). The Geckoboard service defaults to 8640, but do not bind there or stop Mail Engine without Venu's approval; the acceptance suite runs on free override port 8641.
 - Exact commercial API quotas/features beyond the implemented documented subset are out of scope and must not be claimed as complete compatibility.
 - No pricing claims in README unless verified from an official source.

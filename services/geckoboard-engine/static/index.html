@@ -51,7 +51,7 @@
             </div>
             <div class="panel"><div class="panel-title"><span class="icon-box">⇧</span><div><h3>Push data</h3><p class="muted">Basic Auth uses your Datasets API key as the username.</p></div></div><div class="code-block"><span class="code-label">APPEND RECORDS</span><pre id="push-example">curl -u "$GECKOBOARD_DATASET_API_KEY:" \\
   -H "Content-Type: application/json" \\
-  -X POST http://127.0.0.1:8670/api/datasets/your.dataset/data \\\
+  -X POST http://127.0.0.1:8640/api/datasets/your.dataset/data \\\
   -d '{"data":[{"date":"2026-05-21","amount":42}]}'</pre></div><div class="push-notes"><span>POST appends and upserts by <code>unique_by</code>.</span><span>PUT replaces the dataset's records.</span><span>API key is stored as a hash, never returned by list calls.</span></div></div>
           </div>
           <div class="section-head compact"><div><h3>Your datasets</h3><p class="muted">Schema and row count, without exposing credentials.</p></div><button id="refresh-datasets" class="button ghost small" type="button">Refresh</button></div>

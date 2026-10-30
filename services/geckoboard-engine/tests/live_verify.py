@@ -1,7 +1,7 @@
 """Independent live verification for Geckoboard Engine.
 
 Run against an already-running server:
-    GECKOBOARD_BASE=http://127.0.0.1:8670 \
+    GECKOBOARD_TEST_PORT=8641 GECKOBOARD_BASE=http://127.0.0.1:8641 \
     GECKOBOARD_ADMIN_PASSWORD=... GECKOBOARD_DATASET_API_KEY=... \
     python tests/live_verify.py
 """
@@ -13,10 +13,18 @@ import io
 import os
 import secrets
 import sys
+from urllib.parse import urlparse
 
 import httpx
 
-BASE = os.environ.get("GECKOBOARD_BASE", "http://127.0.0.1:8670")
+base_override = os.environ.get("GECKOBOARD_BASE")
+TEST_PORT = int(
+    os.environ.get(
+        "GECKOBOARD_TEST_PORT",
+        str(urlparse(base_override or "http://127.0.0.1:8640").port or 8640),
+    )
+)
+BASE = base_override or f"http://127.0.0.1:{TEST_PORT}"
 PASSWORD = os.environ["GECKOBOARD_ADMIN_PASSWORD"]
 API_KEY = os.environ["GECKOBOARD_DATASET_API_KEY"]
 
@@ -45,7 +53,9 @@ def main() -> int:
     health = call("get", "/health")
     check("health 200", health.status_code == 200, health.text[:120])
     check(
-        "health reports own port", health.json().get("port") == 8670, str(health.json().get("port"))
+        "health reports configured port",
+        health.json().get("port") == TEST_PORT,
+        str(health.json().get("port")),
     )
 
     bad = call(

@@ -17,6 +17,8 @@ const showMessage = (id, message, error = false) => {
   target.textContent = message;
   target.classList.toggle('error', error);
 };
+const pushExample = $('push-example');
+if (pushExample) pushExample.textContent = pushExample.textContent.replace(/http:\/\/127\.0\.0\.1:\d+/, window.location.origin);
 
 function showTab(name) {
   document.querySelectorAll('.tab-panel').forEach((panel) => panel.classList.toggle('hidden', panel.dataset.panel !== name));
