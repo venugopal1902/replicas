@@ -11,7 +11,25 @@ from typing import Any
 
 import httpx
 
-BASE_URL = os.environ.get("MAIL_BASE", "http://localhost:8640").rstrip("/")
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3] / "tools"))
+from isolated_server import start_isolated  # noqa: E402
+
+# Runs against a private instance with a throwaway database. This suite creates campaigns, leads
+# and mailboxes, imports CSV rows, and mutates a seeded inbox message and its lead status - all of
+# which used to land in the live 8640 workspace and accumulate across runs.
+# Set MAIL_ENGINE_LIVE_SUITE=1 to point it back at the running instance.
+BASE_URL = start_isolated(
+    service_dir=pathlib.Path(__file__).resolve().parents[1],
+    db_env="DATABASE_URL",
+    db_url_prefix="sqlite+aiosqlite:///",
+    test_port=int(os.environ.get("MAIL_ENGINE_TEST_PORT", "0")),
+    live_port=8640,
+    admin_password="mailengine123",
+    admin_email="admin@mailengine.local",
+).rstrip("/")
 CHECKS: list[tuple[str, bool, str]] = []
 ALL_STATUS_CODES: list[int] = []
 
