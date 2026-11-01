@@ -1337,7 +1337,7 @@
           '<p class="muted">Stored locally as blotato_key and sent as the blotato-api-key header.</p>' +
           '<label class="field"><span>Key</span><input id="set-key" type="password" autocomplete="off"></label>' +
           '<button id="set-save" class="btn primary" type="button">Save key</button>' +
-          '<p class="hint">How to get a key: default master key <code>blt_master_venu_secret_2026</code>.</p>' +
+          '<p class="hint">No key yet? One is generated on first boot and stored in <code>data/master_api_key.txt</code>. Set <code>BLOTATO_MASTER_KEY</code> to choose your own.</p>' +
         "</section>" +
         '<section class="card flex-col"><div class="card-title">Engine</div><div id="health">Loading...</div></section>' +
       "</div>" +

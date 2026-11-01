@@ -8,8 +8,38 @@ from datetime import datetime, timedelta
 
 import httpx
 
-BASE = "http://localhost:8400"
-ADMIN = {"blotato-api-key": "blt_master_venu_secret_2026"}
+import os
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3] / "tools"))
+from isolated_server import start_isolated  # noqa: E402
+
+# Runs against a private instance with a throwaway database, because these checks create posts,
+# upload media and spend credits. Set BLOTATO_LIVE_SUITE=1 to target the running instance.
+BASE = start_isolated(
+    service_dir=pathlib.Path(__file__).resolve().parents[1],
+    db_env="DATABASE_URL",
+    db_url_prefix="sqlite+aiosqlite:///",
+    test_port=int(os.environ.get("BLOTATO_TEST_PORT", "0")),
+    live_port=8400,
+    admin_password="",
+    admin_email=None,
+    extra_env={"BLOTATO_MASTER_KEY": "blt_test-only-master-key"},
+    quiet=True,
+)
+
+# The master key is not stored in this file any more. In isolated mode it is the key this run
+# booted its private instance with; in live mode it comes from the env or the first-boot key file.
+TEST_KEY = "blt_test-only-master-key"
+if os.environ.get("BLOTATO_LIVE_SUITE") == "1":
+    _KEY = os.environ.get("BLOTATO_MASTER_KEY", "").strip()
+    if not _KEY:
+        _key_file = pathlib.Path(__file__).resolve().parents[1] / "data" / "master_api_key.txt"
+        _KEY = _key_file.read_text(encoding="utf-8").strip() if _key_file.exists() else ""
+else:
+    _KEY = TEST_KEY
+ADMIN = {"blotato-api-key": _KEY}
 ROWS = []
 
 

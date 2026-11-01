@@ -22,7 +22,7 @@ uv run python scripts/run_server.py
 Open **http://localhost:8400** and paste the master key:
 
 ```
-blt_master_venu_secret_2026
+$BLOTATO_MASTER_KEY
 ```
 
 That key is unlimited. It is printed by `scripts/run_server.py` on boot and defined in
@@ -126,6 +126,24 @@ report a fake success. That distinction is deliberate and covered by the test su
 
 ---
 
+## The admin key
+
+The master API key is **not stored in this repository**. On first boot the engine generates one and
+writes it to `data/master_api_key.txt` (mode 0600) without printing it:
+
+```
+cat data/master_api_key.txt
+```
+
+Set `BLOTATO_MASTER_KEY` to choose your own instead. The examples below assume you have it exported:
+
+```
+export BLOTATO_MASTER_KEY=$(cat data/master_api_key.txt)
+```
+
+An earlier version of this engine shipped a hard-coded default key, which meant every clone of the
+repo shared one known admin credential. That default is gone.
+
 ## Configuration
 
 Environment variables, or a `.env` next to `pyproject.toml`:
@@ -134,7 +152,7 @@ Environment variables, or a `.env` next to `pyproject.toml`:
 | --- | --- | --- |
 | `PORT` | `8400` | HTTP port |
 | `HOST` | `0.0.0.0` | bind address |
-| `BLOTATO_MASTER_KEY` | `blt_master_venu_secret_2026` | admin key, change before exposing |
+| `BLOTATO_MASTER_KEY` | generated on first boot | admin key; override to choose your own |
 | `DATABASE_URL` | `sqlite+aiosqlite:///data/blotato.db` | swap for Postgres in production |
 | `META_ACCESS_TOKEN` | — | Meta Graph default |
 | `TWITTER_BEARER_TOKEN` | — | X API v2 default |
@@ -149,7 +167,7 @@ Platform credentials normally live per account (Settings → add account), store
 
 ```bash
 curl -X POST http://localhost:8400/v2/users/me/accounts \
-  -H "blotato-api-key: blt_master_venu_secret_2026" \
+  -H "blotato-api-key: $BLOTATO_MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "platform": "instagram",
@@ -203,7 +221,7 @@ Interactive docs: **http://localhost:8400/docs**
   "mcpServers": {
     "blotato": {
       "url": "http://localhost:8400/mcp",
-      "headers": { "blotato-api-key": "blt_master_venu_secret_2026" }
+      "headers": { "blotato-api-key": "$BLOTATO_MASTER_KEY" }
     }
   }
 }
@@ -217,7 +235,7 @@ Quick check without a client:
 
 ```bash
 curl -s http://localhost:8400/mcp \
-  -H "blotato-api-key: blt_master_venu_secret_2026" \
+  -H "blotato-api-key: $BLOTATO_MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | head -c 300
 ```

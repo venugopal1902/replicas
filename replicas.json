@@ -143,7 +143,7 @@
         },
         {
           "title": "Open UI",
-          "desc": "Master key: blt_master_venu_secret_2026",
+          "desc": "Master key: generated on first boot, see data/master_api_key.txt",
           "lang": "text",
           "code": "http://localhost:8400"
         }

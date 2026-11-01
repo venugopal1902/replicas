@@ -4,9 +4,21 @@ Runs the real ASGI app against a fresh database. No network calls are required:
 platform connectors fall back to the deterministic mock when credentials are absent.
 """
 import asyncio
+import atexit
 import json
+import os
+import shutil
 import sys
+import tempfile
 from pathlib import Path
+
+# This suite calls init_db() and then writes accounts, posts and media. It used to do that against
+# the live data/blotato.db, so every run mutated the demo workspace. Point DATABASE_URL at a
+# throwaway file before blotato_engine.config is imported - the settings object is built at import
+# time, so setting this later has no effect.
+_TMP_DB = Path(tempfile.mkdtemp(prefix="blotato-engine-test-")) / "test.db"
+os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{_TMP_DB}"
+atexit.register(lambda: shutil.rmtree(_TMP_DB.parent, ignore_errors=True))
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 

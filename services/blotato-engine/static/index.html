@@ -20,7 +20,7 @@
       <input id="gate-key" type="password" autocomplete="off" spellcheck="false" placeholder="blt_..." required>
     </label>
     <button class="btn primary" type="submit">Continue</button>
-    <p class="hint">How to get a key: use the seeded master key <code>blt_master_venu_secret_2026</code>, or mint one with <code>scripts/create_api_key.py</code>.</p>
+    <p class="hint">How to get a key: the master key is generated on first boot and stored in <code>data/master_api_key.txt</code> (or set <code>BLOTATO_MASTER_KEY</code>), or mint another with <code>scripts/create_api_key.py</code>.</p>
     <p id="gate-error" class="inline-error" hidden></p>
   </form>
 </div>
