@@ -74,6 +74,15 @@ async def health():
     }
 
 
+@app.get("/capture")
+async def capture_page():
+    """The browser-capture page that builds a bookmarklet from the user's own token."""
+    page = STATIC_DIR / "capture.html"
+    if page.exists():
+        return FileResponse(page)
+    return JSONResponse({"detail": "capture.html not built"}, status_code=404)
+
+
 @app.get("/")
 async def root():
     index = STATIC_DIR / "index.html"

@@ -214,3 +214,33 @@ uv run python tests/test_enrichment.py
 uv run python tests/test_campaigns.py
 uv run python tests/test_lead_engine.py
 ```
+
+## Capture a profile from your browser
+
+`/capture` builds a bookmarklet that reads the profile you are *already looking at* and sends its
+visible fields (name, company, headline, URL) to your own engine, then shows the emails back.
+
+1. Open http://localhost:8500/capture
+2. Paste your API token and click "Build my bookmarklet"
+3. Drag the button to your bookmarks bar
+4. Open any profile page and click the bookmark
+
+This is the same data path a commercial extension uses. It reads one page you opened yourself; it
+does not crawl, enumerate search results, or log into anything. Bulk scraping is what breaches a
+site's terms, not a click on a page you are already viewing.
+
+## What it can and cannot find
+
+| Output | How it is produced | Needs money? |
+|---|---|---|
+| Work email (`first.last@company.com`) | pattern inference + DNS MX + optional SMTP probe | no |
+| Verified work email (status `valid`, grade A) | `SMTP_PROBE=true`, real RCPT check | no |
+| Direct / personal email | copied from a provider response only | yes, provider key |
+| Phone number | copied from a provider response only | yes, provider key |
+
+The engine never invents a personal email or a phone. When no provider supplies one the field is
+`null` with status `unavailable`, and the reveal is not charged for it.
+
+Set `APOLLO_API_KEY`, `HUNTER_API_KEY` or `PDL_API_KEY` to switch those on. Apollo and PDL return
+phones; Hunter does not.
+

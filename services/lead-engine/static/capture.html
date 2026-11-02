@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lead Engine — browser capture</title>
+<style>
+  :root {
+    --bg: #0e1116; --card: #161b22; --line: #242c37; --ink: #e6edf3;
+    --muted: #8b949e; --accent: #2f81f7; --ok: #3fb950; --warn: #d29922;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 14px/1.55 ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif; }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 22px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 28px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 20px; margin: 0 0 18px; }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+       margin: 0 0 14px; font-weight: 600; }
+  label { display: block; margin: 0 0 14px; }
+  label span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+  input { width: 100%; padding: 9px 11px; background: #0d1117; color: var(--ink);
+          border: 1px solid var(--line); border-radius: 6px; font: inherit; }
+  button { padding: 9px 14px; border-radius: 6px; border: 1px solid var(--line);
+           background: #21262d; color: var(--ink); font: inherit; cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  a.drag { display: inline-block; padding: 10px 16px; border-radius: 6px; text-decoration: none;
+           background: var(--accent); color: #fff; font-weight: 600; margin: 6px 0 0; }
+  code, .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 12.5px; }
+  ol { margin: 0; padding-left: 20px; }
+  ol li { margin: 0 0 8px; }
+  .note { border-left: 3px solid var(--warn); padding: 10px 14px; background: #1c1a12;
+          border-radius: 0 6px 6px 0; color: #d8cfae; margin: 14px 0 0; font-size: 13px; }
+  .ok { color: var(--ok); }
+  .muted { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Capture a profile from your browser</h1>
+  <p class="sub">One click sends the profile you are looking at to your own Lead Engine and returns its emails.</p>
+
+  <section class="card">
+    <h2>1. Your API token</h2>
+    <label>
+      <span>Paste the token from the app (Settings, or the login response)</span>
+      <input id="token" type="password" autocomplete="off" placeholder="Bearer token">
+    </label>
+    <button class="primary" id="build" type="button">Build my bookmarklet</button>
+  </section>
+
+  <section class="card" id="out" hidden>
+    <h2>2. Drag this to your bookmarks bar</h2>
+    <a class="drag" id="bm" href="#" onclick="return false;">Send to Lead Engine</a>
+    <p class="muted" style="margin:12px 0 0">
+      Can't drag? Right-click the bookmarks bar, choose "Add page", and paste the URL shown below.
+    </p>
+    <label style="margin-top:14px">
+      <span>Bookmarklet URL</span>
+      <input id="url" class="mono" readonly>
+    </label>
+  </section>
+
+  <section class="card">
+    <h2>3. Use it</h2>
+    <ol>
+      <li>Open any profile page in the same browser.</li>
+      <li>Click the bookmarklet. It reads only the fields on that page: name, company, headline, URL.</li>
+      <li>You get the work email, its verification status, and any direct email or phone the engine has.</li>
+    </ol>
+    <div class="note">
+      This is the same data path a commercial extension uses: the fields visible on the page you are
+      already viewing, sent to your own account. It does not crawl, enumerate search results, or touch
+      a profile you have not opened. Scraping at scale is what violates a site's terms, not reading
+      one page you opened yourself.
+    </div>
+  </section>
+</div>
+
+<script>
+  // The bookmarklet must run on the target page, so it carries its own token and posts directly.
+  function booklet(origin, token) {
+    const js = `(function(){
+      var t=${JSON.stringify(token)};
+      var n='', c='', title='';
+      try {
+        var ld=document.querySelector('script[type="application/ld+json"]');
+        if(ld){var d=JSON.parse(ld.textContent); n=d.name||''; if(d.worksFor&&d.worksFor.name)c=d.worksFor.name;}
+      } catch(e){}
+      if(!n){var h=document.querySelector('h1'); if(h)n=h.textContent.trim();}
+      if(!n){n=(document.title||'').split('|')[0].split('-')[0].trim();}
+      title=(document.title||'').trim();
+      var parts=(n||'').split(/\\s+/).filter(Boolean);
+      var first=parts.shift()||'', last=parts.join(' ');
+      fetch(${JSON.stringify(origin)}+'/api/enrich/identity',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+t},
+        body:JSON.stringify({firstName:first,lastName:last,companyName:c,title:title,
+                             linkedinUrl:location.href.split('?')[0]})
+      }).then(function(r){return r.json();}).then(function(d){
+        var e=(d&&d.contact)||{};
+        alert('Work email: '+(e.workEmail||'none')+' ['+(e.workEmailStatus||'n/a')+']'+
+              '\\nDirect email: '+(e.directEmail||'none')+
+              '\\nPhone: '+(e.phone||'none')+
+              '\\nCredits spent: '+(d.creditsSpent!==undefined?d.creditsSpent:'?'));
+      }).catch(function(err){alert('Lead Engine error: '+err);});
+    })();`;
+    return 'javascript:' + encodeURIComponent(js);
+  }
+
+  const btn = document.getElementById('build');
+  btn.addEventListener('click', () => {
+    const token = document.getElementById('token').value.trim();
+    const url = booklet(location.origin, token);
+    document.getElementById('bm').setAttribute('href', url);
+    document.getElementById('url').value = url;
+    document.getElementById('out').hidden = false;
+    if (!token) {
+      document.getElementById('url').value = 'Add a token first, then rebuild.';
+    }
+  });
+
+  // Remember the token locally so a page reload does not force a re-paste.
+  const saved = localStorage.getItem('lead_token') || '';
+  if (saved) document.getElementById('token').value = saved;
+  document.getElementById('token').addEventListener('change', (e) => {
+    localStorage.setItem('lead_token', e.target.value.trim());
+  });
+</script>
+</body>
+</html>
