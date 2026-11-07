@@ -11,7 +11,7 @@ import re
 import urllib.parse
 import asyncio
 import json
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
 
@@ -49,16 +49,22 @@ async def _fetch(client: httpx.AsyncClient, url: str) -> str:
         return ""
 
 
-async def _robots_allows(client: httpx.AsyncClient, base: str, path: str) -> bool:
-    robots = await _fetch(client, base + "/robots.txt")
-    if not robots:
-        return True
-    for line in robots.splitlines():
-        lowered = line.lower().strip()
-        if lowered.startswith("disallow:"):
+async def _robots_rules(client: httpx.AsyncClient, base: str) -> List[str]:
+    """Read robots.txt once. Fetching it per path meant 17 extra requests per scan."""
+    body = await _fetch(client, base + "/robots.txt")
+    rules: List[str] = []
+    for line in body.splitlines():
+        if line.lower().strip().startswith("disallow:"):
             rule = line.split(":", 1)[1].strip()
-            if rule == "/" or (rule and path.startswith(rule)):
-                return False
+            if rule:
+                rules.append(rule)
+    return rules
+
+
+def _allowed(rules: List[str], path: str) -> bool:
+    for rule in rules:
+        if rule == "/" or path.startswith(rule):
+            return False
     return True
 
 
@@ -268,6 +274,84 @@ async def _discover_team_paths(client: httpx.AsyncClient, base: str, already: Li
     return found
 
 
+# ---------------------------------------------------------------------------
+# Real person emails from public git history.
+#
+# Engineers commit with their own address. For any company with public repositories that is a
+# published, verifiable list of real people at the company - not a guessed pattern and not a
+# support inbox. This is the one free source of genuine person emails.
+# ---------------------------------------------------------------------------
+
+GITHUB_API = "https://api.github.com"
+
+
+def _gh_headers() -> dict:
+    import os
+    headers = {"Accept": "application/vnd.github+json", "User-Agent": "lead-engine"}
+    token = os.environ.get("GITHUB_TOKEN", "").strip()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
+
+
+async def _gh_get(client: httpx.AsyncClient, path: str) -> Any:
+    try:
+        response = await client.get(GITHUB_API + path, headers=_gh_headers(), timeout=20.0)
+        if response.status_code != 200:
+            return None
+        return response.json()
+    except Exception:
+        return None
+
+
+async def github_people(domain: str, max_repos: int = 4, max_commits: int = 60) -> List[dict]:
+    """Collect real @domain addresses from public commit metadata, newest repos first."""
+    label = domain.split(".")[0]
+    candidates = [label, label.replace("-", ""), label.replace("-", "_")]
+
+    async with httpx.AsyncClient() as client:
+        account = None
+        for candidate in candidates:
+            for kind in ("orgs", "users"):
+                data = await _gh_get(client, f"/{kind}/{candidate}")
+                if data:
+                    account = candidate
+                    break
+            if account:
+                break
+        if not account:
+            return []
+
+        repos = await _gh_get(client, f"/orgs/{account}/repos?per_page={max_repos}&sort=pushed")
+        if not repos:
+            repos = await _gh_get(client, f"/users/{account}/repos?per_page={max_repos}&sort=pushed")
+        if not isinstance(repos, list):
+            return []
+
+        totals: Dict[str, int] = {}
+        names: Dict[str, str] = {}
+        for repo in repos[:max_repos]:
+            commits = await _gh_get(
+                client, f"/repos/{account}/{repo['name']}/commits?per_page={max_commits}")
+            if not isinstance(commits, list):
+                continue
+            for commit in commits:
+                author = ((commit.get("commit") or {}).get("author") or {})
+                email = str(author.get("email") or "").strip().lower()
+                if not email.endswith("@" + domain) or "noreply" in email or "users.noreply" in email:
+                    continue
+                totals[email] = totals.get(email, 0) + 1
+                if email not in names:
+                    names[email] = str(author.get("name") or "").strip()
+
+    ordered = sorted(totals.items(), key=lambda item: -item[1])[:40]
+    return [
+        {"email": email, "name": names.get(email, ""), "commits": count,
+         "source": f"public commits in {account}'s repositories"}
+        for email, count in ordered
+    ]
+
+
 async def scan(domain: str, smtp: bool = False) -> dict:
     """Return published emails, role addresses, MX hosts and (optionally) SMTP verdicts."""
     domain = normalise_domain(domain)
@@ -285,6 +369,9 @@ async def scan(domain: str, smtp: bool = False) -> dict:
             "notes": ["no MX records: this domain cannot receive mail"],
         }
 
+    # Independent of the site scan, so fetch git history in parallel instead of queueing it.
+    git_task = asyncio.create_task(github_people(domain))
+
     published: Dict[str, str] = {}
     pages_html: List[str] = []
     async with httpx.AsyncClient(headers={"User-Agent": UA, "Accept": "text/html,*/*"}) as client:
@@ -294,11 +381,14 @@ async def scan(domain: str, smtp: bool = False) -> dict:
         except Exception:
             pass
 
-        for path in paths:
-            if not await _robots_allows(client, base, path):
-                notes.append(f"robots.txt disallows {path}")
-                continue
-            html = await _fetch(client, base + path)
+        rules = await _robots_rules(client, base)
+        allowed = [p for p in paths if _allowed(rules, p)]
+        for blocked in [p for p in paths if p not in allowed]:
+            notes.append(f"robots.txt disallows {blocked}")
+
+        # One round of parallel fetches instead of a serial crawl.
+        bodies = await asyncio.gather(*(_fetch(client, base + path) for path in allowed))
+        for path, html in zip(allowed, bodies):
             if not html:
                 continue
             pages.append(path)
@@ -309,6 +399,12 @@ async def scan(domain: str, smtp: bool = False) -> dict:
     people: List[dict] = []
     if smtp:
         people = await find_people(domain, list(pages_html))
+
+    # Real addresses published in public git history; no guessing involved.
+    try:
+        git_people = await git_task
+    except Exception:
+        git_people = []
 
     emails: List[dict] = [
         {"email": address, "source": how, "constructed": False} for address, how in sorted(published.items())
@@ -328,4 +424,4 @@ async def scan(domain: str, smtp: bool = False) -> dict:
             item["reason"] = verdict.get("reason")
 
     return {"domain": domain, "mx": mx_hosts, "pagesRead": pages, "notes": notes,
-            "people": people, "emails": emails}
+            "people": people, "githubPeople": git_people, "emails": emails}

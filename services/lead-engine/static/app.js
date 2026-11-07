@@ -1813,6 +1813,24 @@
 
   /* ---------------- Company emails ---------------- */
 
+
+  function githubPeopleTable(people) {
+    if (!people || !people.length) return "";
+    const rows = people
+      .slice(0, 40)
+      .map(
+        (p) =>
+          '<tr><td class="mono">' + esc(p.email) + "</td><td>" + esc(p.name || "—") +
+          "</td><td>" + esc(String(p.commits || "")) + '</td><td class="subtitle">' + esc(p.source || "") + "</td></tr>"
+      )
+      .join("");
+    return '<div class="panel" style="margin-bottom:12px"><strong>Real people with published emails (' +
+      people.length + ")</strong>" +
+      '<p class="subtitle">Addresses these people published themselves in public commit history. Not guessed, not a role inbox.</p>' +
+      '<div class="table-wrap"><table><thead><tr><th>Email</th><th>Name</th><th>Commits</th><th>Source</th></tr></thead><tbody>' +
+      rows + "</tbody></table></div></div>";
+  }
+
   function peopleTable(people) {
     if (!people.length) {
       return '<div class="panel"><p class="subtitle">No named people found on the pages we could read. ' +
@@ -1882,6 +1900,7 @@
           '<p class="subtitle">Pages read: ' + esc((data.pagesRead || []).join(", ") || "none reachable") + "</p>" +
           (data.notes || []).map((n) => '<p class="subtitle">' + esc(n) + "</p>").join("") +
           "</div>" +
+          githubPeopleTable(data.githubPeople || []) +
           peopleTable(people) +
           addressTable("Published by the company", published) +
           addressTable("Role addresses (constructed)", constructed);
