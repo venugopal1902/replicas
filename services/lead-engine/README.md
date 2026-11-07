@@ -215,6 +215,41 @@ uv run python tests/test_campaigns.py
 uv run python tests/test_lead_engine.py
 ```
 
+## Find a company's emails for free
+
+```bash
+cd services/lead-engine
+uv run python scripts/find_company_emails.py stripe.com          # published + role addresses
+uv run python scripts/find_company_emails.py stripe.com --smtp   # prove each mailbox exists
+uv run python scripts/find_company_emails.py figma.com --json
+```
+
+It reads the company's own public pages (homepage, contact, about, team, press, careers), respects
+`robots.txt`, pulls the addresses they publish, adds the standard role inboxes, and checks MX.
+With `--smtp` it opens a real SMTP conversation and asks the mail server whether the mailbox exists.
+
+Measured on 2026-11-01 from this machine:
+
+| Domain | Published | Role (constructed) | SMTP verdict |
+|---|---|---|---|
+| stripe.com | media@, sales@ (from /press and /contact) | 9 | mailboxes accepted, domain is **catch-all** |
+| figma.com | none (robots.txt disallows every page we would read) | 10 | `media@` rejected 550 |
+
+What is free and what is not:
+
+| You want | Free? | How |
+|---|---|---|
+| Company role inboxes (info@, sales@) | yes | published or constructed, verified by SMTP |
+| A named person's work email | usually | pattern + SMTP probe; exact when the pattern is right |
+| A personal Gmail/Outlook address | no | only a paid data provider has these |
+| A phone number | no | only a paid data provider has these |
+
+## Apollo's Free plan cannot be used
+
+A valid Apollo key on the Free plan answers `403 API_INACCESSIBLE` for `people/match`: the API is
+not included below a paid plan. The engine reports that in the response `notes` instead of returning
+silently empty fields, and falls back to pattern + SMTP verification, which costs nothing.
+
 ## Capture a profile from your browser
 
 `/capture` builds a bookmarklet that reads the profile you are *already looking at* and sends its

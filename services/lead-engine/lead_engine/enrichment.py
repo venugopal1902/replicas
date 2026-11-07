@@ -25,12 +25,13 @@ from __future__ import annotations
 
 import asyncio
 import re
+import secrets
 import unicodedata
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
-import dns.asyncresolver
 import dns.exception
+import dns.resolver
 import httpx
 
 from .config import settings
@@ -88,7 +89,9 @@ def score_for(status: str) -> str:
     return {
         "verified": "A+",
         "valid": "A+",
-        "catch_all": "A",
+        # A catch-all domain accepts every address, so the mailbox itself is unproven. It must not
+        # outrank a role address that at least has a known purpose.
+        "catch_all": "C",
         "risky": "B",
         "unknown": "C",
         "invalid": "",
@@ -216,6 +219,67 @@ def email_patterns(first: str, last: str, domain: str) -> List[dict]:
 # ---------------------------------------------------------------------------
 
 
+async def _mx_lookup_doh(domain: str) -> List[str]:
+    """MX records via DNS-over-HTTPS (Cloudflare), then Google.
+
+    Plain UDP DNS proved unreliable inside the running service: lookups that succeed from a script
+    timed out in-process and were reported as "no mx record", which marked real mailboxes invalid.
+    DoH rides the ordinary HTTPS path, which works here, and needs no UDP.
+    """
+    for endpoint in ("https://cloudflare-dns.com/dns-query", "https://dns.google/resolve"):
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    endpoint,
+                    params={"name": domain, "type": "MX"},
+                    headers={"Accept": "application/dns-json"},
+                )
+                response.raise_for_status()
+                payload = response.json()
+        except Exception:
+            continue
+
+        answers = payload.get("Answer") or []
+        hosts: List[str] = []
+        for answer in answers:
+            if int(answer.get("type", 0)) != 15:
+                continue
+            data = str(answer.get("data", "")).split()
+            if len(data) >= 2:
+                host = data[1].rstrip(".").lower()
+                if host and host != ".":
+                    hosts.append((int(data[0]), host))
+        if hosts:
+            return [host for _, host in sorted(hosts)]
+        if payload.get("Status") == 0 and not answers:
+            raise _NoMxRecords()          # server answered: no MX published
+    return []
+
+
+class _NoMxRecords(Exception):
+    """The domain definitively publishes no MX records."""
+
+
+def _mx_lookup_sync(domain: str) -> List[str]:
+    """Blocking MX lookup, run in a worker thread. Raises _NoMxRecords for a real empty answer."""
+    resolver = dns.resolver.Resolver()
+    resolver.lifetime = 8.0
+    resolver.timeout = 8.0
+    try:
+        answers = resolver.resolve(domain, "MX")
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+        raise _NoMxRecords() from None
+
+    hosts: List[str] = []
+    for record in sorted(answers, key=lambda r: r.preference):
+        host = str(record.exchange).rstrip(".").lower()
+        if host and host != ".":
+            hosts.append(host)
+    if not hosts:
+        raise _NoMxRecords()
+    return hosts
+
+
 async def mx_lookup(domain: str) -> List[str]:
     """MX hostnames for ``domain``, best preference first. Cached; ``[]`` on any error.
 
@@ -228,22 +292,31 @@ async def mx_lookup(domain: str) -> List[str]:
     if domain in _mx_cache:
         return list(_mx_cache[domain])
 
-    hosts: List[str] = []
-    try:
-        resolver = dns.asyncresolver.Resolver()
-        resolver.lifetime = 4.0
-        resolver.timeout = 4.0
-        answers = await resolver.resolve(domain, "MX")
-        ordered = sorted(answers, key=lambda record: record.preference)
-        for record in ordered:
-            host = str(record.exchange).rstrip(".").lower()
-            if host and host != ".":
-                hosts.append(host)
-    except Exception:
-        hosts = []
+    # Only a definitive answer is cached. Caching a transient failure (a timeout at boot, a busy
+    # resolver) made every later lookup for that domain report "no mx record" for the life of the
+    # process, which silently marked real mailboxes such as media@stripe.com as invalid.
+    #
+    # The query runs in a worker thread with the synchronous resolver. dns.asyncresolver proved
+    # unreliable inside the uvicorn loop on Windows: identical lookups that succeed in a plain
+    # script timed out in-process and were then reported as "no mx record".
+    for attempt in range(2):
+        try:
+            hosts = await _mx_lookup_doh(domain)
+            if not hosts:
+                hosts = await asyncio.to_thread(_mx_lookup_sync, domain)
+        except _NoMxRecords:
+            _mx_cache[domain] = []          # a real answer: this domain publishes no MX
+            return []
+        except Exception:
+            if attempt == 0:
+                await asyncio.sleep(0.4)    # one retry, then give up without caching
+                continue
+            return []
 
-    _mx_cache[domain] = hosts
-    return list(hosts)
+        _mx_cache[domain] = hosts
+        return list(hosts)
+
+    return []
 
 
 def _company_slug(company_name: str) -> str:
@@ -278,7 +351,10 @@ async def resolve_domain(company_name: str, explicit: Optional[str] = None) -> O
             resolved = candidate
             break
 
-    _domain_cache[slug] = resolved
+    # Cache a hit only. Remembering None would turn one failed probe into a permanent
+    # "no domain resolved" for that company for the rest of the process.
+    if resolved is not None:
+        _domain_cache[slug] = resolved
     return resolved
 
 
@@ -403,6 +479,15 @@ async def verify_email(email: str, use_smtp: Optional[bool] = None) -> dict:
 
     probe = settings.SMTP_PROBE and use_smtp is not False
     if probe:
+        # A catch-all domain accepts a random local part, so a 250 on the real address proves
+        # nothing about that mailbox. Without this canary, zzq.xxqwv.qzx@stripe.com came back
+        # "valid / A+", which would have handed users confirmed-looking addresses that do not exist.
+        canary = f"zzq-catchall-{secrets.token_hex(5)}@{domain}"
+        canary_result = await _smtp_probe(canary, mx_hosts)
+        if canary_result and canary_result.get("result") == "valid":
+            return _verdict(email, "catch_all", mx_hosts[0],
+                            "domain accepts any address (catch-all); mailbox not verifiable")
+
         probed = await _smtp_probe(email, mx_hosts)
         if probed is not None:
             return probed
@@ -468,6 +553,8 @@ async def _apollo(key: str, first: str, last: str, company: str, domain: str) ->
             )
             response.raise_for_status()
             person = _as_dict(_as_dict(response.json()).get("person"))
+    except httpx.HTTPStatusError as exc:
+        raise _provider_error("apollo", exc) from None
     except Exception:
         return {}
 
@@ -510,6 +597,43 @@ async def _pdl(key: str, first: str, last: str, company: str) -> dict:
         "phone": phones[0] if phones else None,
         "source": "pdl",
     }
+
+
+
+class ProviderError(Exception):
+    """A provider rejected the call. Carries enough detail to tell the user what to fix.
+
+    Apollo answers a Free-plan key with HTTP 403 and error_code API_INACCESSIBLE. Swallowing that as
+    "no result" left the operator staring at empty fields with no clue that the plan, not the code,
+    was the problem.
+    """
+
+    def __init__(self, provider: str, status: int, code: str, message: str) -> None:
+        super().__init__(f"{provider}: HTTP {status} {code} - {message}")
+        self.provider = provider
+        self.status = status
+        self.code = code
+        self.message = message
+
+
+def _provider_error(provider: str, exc: Exception) -> ProviderError:
+    response = getattr(exc, "response", None)
+    status = getattr(response, "status_code", 0) or 0
+    body: Dict[str, Any] = {}
+    if response is not None:
+        try:
+            parsed = response.json()
+            body = parsed if isinstance(parsed, dict) else {}
+        except Exception:
+            body = {}
+    code = str(body.get("error_code") or body.get("code") or "")
+    message = str(body.get("error") or body.get("message") or "")
+    if not message and response is not None:
+        try:
+            message = response.text[:160]
+        except Exception:
+            message = ""
+    return ProviderError(provider, status, code, message)
 
 
 _ADAPTERS = (
@@ -616,8 +740,12 @@ async def enrich_person(
             continue
         try:
             found = await adapter(key, first_name, last_name, company_name or "", domain or "")
+        except ProviderError as exc:
+            notes.append(str(exc)[:220])
+            continue
         except Exception:
-            found = {}
+            notes.append(f"{provider_name}: adapter error")
+            continue
         if not found or not found.get("workEmail"):
             notes.append(f"{provider_name}: no result")
             continue

@@ -183,8 +183,17 @@ def main() -> int:
     results = {i["email"]: i["result"] for i in v.json().get("items", [])}
     rec("verifier flags malformed", results.get("not-an-email") == "invalid", str(results))
     rec("verifier flags role account", results.get("info@stripe.com") == "risky", str(results))
-    rec("verifier checks a live domain", results.get("someone@gmail.com") in
-        ("risky", "catch_all", "valid", "unknown"), str(results.get("someone@gmail.com")))
+    # someone@gmail.com is invented, so a real RCPT probe can legitimately prove it does not exist.
+    # What must never happen is the old failure: the domain lookup gives up and the address is
+    # rejected as "no mx record" even though gmail.com obviously publishes MX records.
+    gmail_item = next((i for i in v.json().get("items", [])
+                       if i.get("email") == "someone@gmail.com"), {})
+    gmail_result = gmail_item.get("result")
+    gmail_reason = str(gmail_item.get("reason", ""))
+    rec("verifier reached gmail's mail servers",
+        gmail_result in ("risky", "catch_all", "valid", "unknown", "invalid")
+        and "no mx record" not in gmail_reason,
+        f"result={gmail_result} reason={gmail_reason[:40]}")
 
     # -------------------------------------------------------------- campaigns
     camp = c.post("/api/campaigns", headers=H, json={

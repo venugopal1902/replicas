@@ -381,6 +381,9 @@ async def enrich_identity(body: IdentityBody, ctx: Ctx = Depends(get_ctx), db: A
         "contact": contact_dict(contact, True),
         "creditsSpent": res["credits"],
         "balance": ctx.workspace.credits,
+        # Why a field is empty matters as much as the field. This carries provider rejections
+        # (for example Apollo's API_INACCESSIBLE on a Free plan) instead of hiding them.
+        "notes": res.get("notes", []),
     }
 
 
