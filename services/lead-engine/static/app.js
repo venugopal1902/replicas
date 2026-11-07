@@ -28,6 +28,7 @@
     campaigns: "Campaigns",
     campaign: "Campaign",
     api: "API & MCP",
+    company: "Company emails",
     settings: "Settings",
   };
 
@@ -206,6 +207,7 @@
       else if (state.route === "lists") await renderLists(view, parsed.id);
       else if (state.route === "enrich") await renderEnrich(view);
       else if (state.route === "verifier") await renderVerifier(view);
+      else if (state.route === "company") await renderCompanyEmails(view);
       else if (state.route === "campaigns") await renderCampaigns(view);
       else if (state.route === "campaign") await renderCampaign(view, parsed.id);
       else if (state.route === "api") await renderApi(view);
@@ -1799,6 +1801,92 @@
       }
     });
     loadProviders();
+  }
+
+
+  /* ---------------- Company emails ---------------- */
+
+  function peopleTable(people) {
+    if (!people.length) {
+      return '<div class="panel"><p class="subtitle">No named people found on the pages we could read. ' +
+        'Most companies do not publish a team page; use Capture on a profile you have open, or a provider key for bulk people data.</p></div>';
+    }
+    const rows = people
+      .map(
+        (person) =>
+          "<tr><td>" + esc(person.name) + "</td><td>" + esc(person.title || "—") + "</td><td class=\"mono\">" +
+          esc(person.email || "—") + "</td><td>" + badge(person.status || "unknown") +
+          "</td><td>" + (person.pattern ? esc(person.pattern) : "—") + "</td></tr>"
+      )
+      .join("");
+    return '<div class="panel" style="margin-bottom:12px"><strong>People (' + people.length + ")</strong>" +
+      '<p class="subtitle">Names read from the company\'s own pages, then that person\'s address built and verified.</p>' +
+      '<div class="table-wrap"><table><thead><tr><th>Name</th><th>Title</th><th>Email</th><th>Verdict</th><th>Pattern</th></tr></thead><tbody>' +
+      rows + "</tbody></table></div></div>";
+  }
+
+  function addressTable(title, items) {
+    if (!items.length) return "";
+    const rows = items
+      .map(
+        (item) =>
+          '<tr><td class="mono">' + esc(item.email) + "</td><td>" + esc(item.source) + "</td><td>" +
+          (item.status ? badge(item.status) : "—") + "</td><td>" + (item.score ? scoreChip(item.score) : "—") +
+          '</td><td class="subtitle">' + esc(item.reason || "") + "</td></tr>"
+      )
+      .join("");
+    return '<div class="panel" style="margin-bottom:12px"><strong>' + esc(title) + " (" + items.length + ")</strong>" +
+      '<div class="table-wrap"><table><thead><tr><th>Address</th><th>How</th><th>Verdict</th><th>Score</th><th>Why</th></tr></thead><tbody>' +
+      rows + "</tbody></table></div></div>";
+  }
+
+  async function renderCompanyEmails(view) {
+    view.innerHTML =
+      '<div class="view-header"><div><h3>Company emails</h3>' +
+      "<p>Find people and mailboxes from a company's own public pages. Free: no provider key, no credits.</p></div></div>" +
+      '<div class="panel"><div class="field"><label for="ce-domain">Company domain</label>' +
+      '<input class="input" id="ce-domain" placeholder="stripe.com" autocomplete="off"></div>' +
+      '<div class="btn-group" style="margin-top:12px;align-items:center">' +
+      '<button class="btn primary" id="ce-go">Find emails</button>' +
+      '<label class="subtitle" style="display:flex;gap:8px;align-items:center">' +
+      '<input type="checkbox" id="ce-smtp" checked> Prove each mailbox over SMTP</label></div>' +
+      '<p id="ce-error" class="form-error"></p><p class="subtitle" id="ce-status"></p></div>' +
+      '<div id="ce-results"></div>';
+
+    $("#ce-go").addEventListener("click", async () => {
+      const domain = $("#ce-domain").value.trim();
+      const smtp = $("#ce-smtp").checked;
+      if (!domain) {
+        $("#ce-error").textContent = "Enter a domain such as stripe.com";
+        return;
+      }
+      $("#ce-error").textContent = "";
+      $("#ce-status").textContent = smtp ? "Reading pages and proving mailboxes, this takes 20-40s..." : "Reading pages...";
+      $("#ce-results").innerHTML = '<div class="panel loading-row">Loading...</div>';
+      $("#ce-go").disabled = true;
+      try {
+        const data = await api("/api/company/emails", { method: "POST", body: { domain, smtp } });
+        const people = data.people || [];
+        const published = (data.emails || []).filter((e) => !e.constructed);
+        const constructed = (data.emails || []).filter((e) => e.constructed);
+        $("#ce-results").innerHTML =
+          '<div class="panel" style="margin-bottom:12px"><strong>' + esc(data.domain) + "</strong>" +
+          '<p class="subtitle">MX: ' + esc((data.mx || []).join(", ") || "none") + "</p>" +
+          '<p class="subtitle">Pages read: ' + esc((data.pagesRead || []).join(", ") || "none reachable") + "</p>" +
+          (data.notes || []).map((n) => '<p class="subtitle">' + esc(n) + "</p>").join("") +
+          "</div>" +
+          peopleTable(people) +
+          addressTable("Published by the company", published) +
+          addressTable("Role addresses (constructed)", constructed);
+        $("#ce-status").textContent = people.length + " people, " + (data.emails || []).length + " addresses, 0 credits";
+        toast("Scanned " + data.domain, "success");
+      } catch (err) {
+        $("#ce-error").textContent = err.message || "Scan failed";
+        $("#ce-results").innerHTML = "";
+      } finally {
+        $("#ce-go").disabled = false;
+      }
+    });
   }
 
   /* ---------------- Boot ---------------- */

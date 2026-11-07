@@ -41,6 +41,8 @@ from .config import settings
 # ---------------------------------------------------------------------------
 
 _mx_cache: Dict[str, List[str]] = {}
+# Domains proven to accept any address. Once known, no further probing helps or is worth the time.
+_catchall_domains: set[str] = set()
 _domain_cache: Dict[str, Optional[str]] = {}
 
 _PROVIDER_TIMEOUT = 15.0
@@ -477,6 +479,10 @@ async def verify_email(email: str, use_smtp: Optional[bool] = None) -> dict:
     if not mx_hosts:
         return _verdict(email, "invalid", None, "no mx record")
 
+    if domain in _catchall_domains:
+        return _verdict(email, "catch_all", mx_hosts[0],
+                        "domain accepts any address (catch-all); mailbox not verifiable")
+
     probe = settings.SMTP_PROBE and use_smtp is not False
     if probe:
         # A catch-all domain accepts a random local part, so a 250 on the real address proves
@@ -485,6 +491,7 @@ async def verify_email(email: str, use_smtp: Optional[bool] = None) -> dict:
         canary = f"zzq-catchall-{secrets.token_hex(5)}@{domain}"
         canary_result = await _smtp_probe(canary, mx_hosts)
         if canary_result and canary_result.get("result") == "valid":
+            _catchall_domains.add(domain)
             return _verdict(email, "catch_all", mx_hosts[0],
                             "domain accepts any address (catch-all); mailbox not verifiable")
 
@@ -681,6 +688,10 @@ async def _from_patterns(domain: str, first: str, last: str,
         verdict = await verify_email(candidate["email"], use_smtp=use_smtp)
         verdict["pattern"] = candidate["pattern"]
         if verdict["result"] == "valid":
+            return verdict
+        if verdict["result"] == "catch_all":
+            # Every further candidate on this domain would return the same unprovable answer, and
+            # each one costs a canary probe plus a target probe. stop here.
             return verdict
         if verdict["result"] in rank and (best is None or rank[verdict["result"]] > rank.get(best["result"], 0)):
             best = verdict

@@ -289,7 +289,17 @@ async def _run_job(job_id: str) -> None:
                             )).scalars().first()
 
                     if not contact:
-                        rows.append({**row, "outcome": "not_found"})
+                        # Emit the same columns as a found row. A ragged row used to produce a CSV
+                        # whose shape depended on how many addresses happened to be found.
+                        blank = {
+                            "first_name": "", "last_name": "", "company": row.get("company", ""),
+                            "domain": row.get("domain", ""), "title": "", "linkedin_url": "",
+                            "work_email": "", "work_email_status": "", "work_email_score": "",
+                            "direct_email": "", "direct_email_status": "", "phone": "", "phone_source": "",
+                        }
+                        blank.update(row)
+                        blank["outcome"] = "not_found"
+                        rows.append(blank)
                         job.processed += 1
                         await session.commit()
                         continue
@@ -487,13 +497,13 @@ async def download_job(job_id: str, ctx: Ctx = Depends(get_ctx), db: AsyncSessio
 @router.post("/csv/enrich")
 async def csv_enrich(
     file: UploadFile = File(...),
-    mode: str = Form("url"),
+    mode: str = Form("auto"),
     folderId: str | None = Form(None),
     ctx: Ctx = Depends(get_ctx),
     db: AsyncSession = Depends(get_db),
 ):
-    if mode not in ("url", "lead", "email"):
-        raise HTTPException(status_code=400, detail="mode must be url, lead or email")
+    if mode not in ("auto", "url", "lead", "email"):
+        raise HTTPException(status_code=400, detail="mode must be auto, url, lead or email")
 
     raw = await file.read()
     try:
@@ -510,6 +520,20 @@ async def csv_enrich(
 
     if not rows:
         raise HTTPException(status_code=400, detail="CSV has no data rows")
+
+    # A caller who uploads first_name,last_name,company used to get "not_found" for every row,
+    # because the default mode was "url" and there was no LinkedIn link to parse. Detect the shape
+    # from the header instead of trusting a default.
+    if mode == "auto":
+        headers = {h.lower().replace(" ", "_") for h in rows[0].keys()}
+        if any("linkedin" in h or h.endswith("url") for h in headers):
+            mode = "url"
+        elif any("email" in h for h in headers):
+            mode = "email"
+        elif any(h.startswith(("first", "last", "name")) for h in headers):
+            mode = "lead"
+        else:
+            mode = "lead"
 
     job = await _new_job(db, ctx, f"csv_{mode}", {"rows": rows, "folderId": folderId})
     return _job_dict(job)
