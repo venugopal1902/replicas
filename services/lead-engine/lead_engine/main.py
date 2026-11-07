@@ -83,6 +83,15 @@ async def capture_page():
     return JSONResponse({"detail": "capture.html not built"}, status_code=404)
 
 
+@app.get("/company-emails")
+async def company_emails_page():
+    """The company email finder UI."""
+    page = STATIC_DIR / "company-emails.html"
+    if page.exists():
+        return FileResponse(page)
+    return JSONResponse({"detail": "company-emails.html not built"}, status_code=404)
+
+
 @app.get("/")
 async def root():
     index = STATIC_DIR / "index.html"

@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from sqlalchemy import select, desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .. import enrichment
+from .. import company_emails, enrichment
 from ..auth import Ctx, get_ctx
 from ..common import contact_dict, spend_credits
 from ..config import settings
@@ -385,6 +385,25 @@ async def enrich_identity(body: IdentityBody, ctx: Ctx = Depends(get_ctx), db: A
         # (for example Apollo's API_INACCESSIBLE on a Free plan) instead of hiding them.
         "notes": res.get("notes", []),
     }
+
+
+class CompanyEmailsBody(BaseModel):
+    domain: str
+    smtp: bool = False
+
+
+@router.post("/company/emails")
+async def company_emails_scan(body: CompanyEmailsBody, ctx: Ctx = Depends(get_ctx)):
+    """Find a company's public emails: pages it publishes, role inboxes, MX, optional SMTP proof.
+
+    Free by design: no provider key is consulted. Nothing is charged against credits.
+    """
+    try:
+        result = await company_emails.scan(body.domain, smtp=body.smtp)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from None
+    result["creditsSpent"] = 0
+    return result
 
 
 @router.post("/enrich/reverse-email")

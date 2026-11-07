@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lead Engine — company emails</title>
+<style>
+  :root {
+    --bg: #0e1116; --card: #161b22; --line: #242c37; --ink: #e6edf3; --muted: #8b949e;
+    --accent: #2f81f7; --ok: #3fb950; --warn: #d29922; --bad: #f85149;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 14px/1.55 ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif; }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 36px 24px 80px; }
+  h1 { font-size: 21px; margin: 0 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 22px; }
+  .bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  input[type=text], input[type=password] {
+    flex: 1 1 260px; padding: 10px 12px; background: #0d1117; color: var(--ink);
+    border: 1px solid var(--line); border-radius: 6px; font: inherit; }
+  button { padding: 10px 16px; border-radius: 6px; border: 1px solid var(--line);
+           background: #21262d; color: var(--ink); font: inherit; cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button:disabled { opacity: .55; cursor: default; }
+  .check { display: flex; align-items: center; gap: 7px; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-top: 16px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 13px; }
+  th { color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
+  tr:last-child td { border-bottom: none; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px;
+         border: 1px solid var(--line); margin-left: 6px; color: var(--muted); }
+  .valid { color: var(--ok); font-weight: 600; }
+  .catch_all { color: var(--warn); font-weight: 600; }
+  .invalid { color: var(--bad); font-weight: 600; }
+  .risky, .unknown { color: var(--muted); font-weight: 600; }
+  .muted { color: var(--muted); }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  .err { color: var(--bad); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Company emails</h1>
+  <p class="sub">Reads a company's own public pages, then checks whether the addresses exist. Free: no credits, no provider key.</p>
+
+  <div class="bar">
+    <input id="domain" type="text" placeholder="stripe.com" autocomplete="off">
+    <label class="check"><input id="smtp" type="checkbox"> Prove each mailbox over SMTP</label>
+    <button class="primary" id="go" type="button">Find emails</button>
+  </div>
+  <div class="bar">
+    <input id="token" type="password" placeholder="API token (saved locally)" autocomplete="off">
+    <span class="muted" id="status"></span>
+  </div>
+
+  <div id="out"></div>
+</div>
+
+<script>
+  const tokenInput = document.getElementById('token');
+  tokenInput.value = localStorage.getItem('lead_token') || '';
+  tokenInput.addEventListener('change', () => localStorage.setItem('lead_token', tokenInput.value.trim()));
+
+  const statusEl = document.getElementById('status');
+  const out = document.getElementById('out');
+  const go = document.getElementById('go');
+
+  function row(item) {
+    const verdict = item.status
+      ? `<span class="${item.status}">${item.status}</span>${item.score ? ' ' + item.score : ''}`
+      : '<span class="muted">not checked</span>';
+    const src = item.constructed
+      ? 'role address' + '<span class="tag">constructed</span>'
+      : item.source;
+    return `<tr><td><code>${item.email}</code></td><td>${src}</td><td>${verdict}</td>
+              <td class="muted">${item.reason || ''}</td></tr>`;
+  }
+
+  go.addEventListener('click', async () => {
+    const domain = document.getElementById('domain').value.trim();
+    const smtp = document.getElementById('smtp').checked;
+    if (!domain) { statusEl.textContent = 'Enter a domain first.'; return; }
+    const token = tokenInput.value.trim();
+    if (!token) { statusEl.textContent = 'Paste your API token first.'; return; }
+
+    go.disabled = true;
+    statusEl.textContent = smtp ? 'Scanning and probing mailboxes, this takes a few seconds...' : 'Scanning...';
+    out.innerHTML = '';
+    try {
+      const response = await fetch('/api/company/emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ domain, smtp }),
+      });
+      const data = await response.json();
+      if (!response.ok) { statusEl.textContent = ''; out.innerHTML = `<p class="err">${data.detail || response.status}</p>`; return; }
+
+      const published = data.emails.filter((e) => !e.constructed);
+      const constructed = data.emails.filter((e) => e.constructed);
+      const section = (title, items) => items.length
+        ? `<div class="card"><strong>${title} (${items.length})</strong>
+             <table><thead><tr><th>Address</th><th>How</th><th>Verdict</th><th>Why</th></tr></thead>
+             <tbody>${items.map(row).join('')}</tbody></table></div>`
+        : `<div class="card"><strong>${title}</strong><p class="muted">none</p></div>`;
+
+      out.innerHTML =
+        `<div class="card"><strong>${data.domain}</strong>
+           <div class="muted">MX: ${(data.mx || []).join(', ') || 'none'}</div>
+           <div class="muted">Pages read: ${(data.pagesRead || []).join(', ') || 'none reachable'}</div>
+           ${(data.notes || []).map((n) => `<div class="muted">${n}</div>`).join('')}
+         </div>` +
+        section('Published by the company', published) +
+        section('Role addresses', constructed) +
+        `<p class="muted">A constructed role address is a guess that the domain accepts mail.
+         Only the SMTP verdict proves a mailbox, and a catch-all domain cannot be proven at all.</p>`;
+      statusEl.textContent = `${data.emails.length} addresses, 0 credits`;
+    } catch (err) {
+      statusEl.textContent = '';
+      out.innerHTML = `<p class="err">Request failed: ${err}</p>`;
+    } finally {
+      go.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
