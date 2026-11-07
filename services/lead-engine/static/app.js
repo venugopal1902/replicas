@@ -465,6 +465,7 @@
     state.search.filters = filters;
     state.search.prompt = prompt;
     state.search.page = page || 1;
+    state.search.note = "";
     state.selection.clear();
     const host = $("#search-results");
     if (host) host.innerHTML = '<div class="panel loading-row">Loading...</div>';
@@ -483,6 +484,7 @@
       state.search.page = data.page || 1;
       state.search.pageSize = data.pageSize || 20;
       state.search.items = data.items || [];
+      state.search.note = data.note || "";
       paintSearchResults();
     } catch (err) {
       if (host) host.innerHTML = '<div class="panel"><p class="form-error">' + esc(err.message) + "</p></div>";
@@ -494,8 +496,13 @@
     const host = $("#search-results");
     if (!host) return;
     const items = state.search.items || [];
+    const note = state.search.note
+      ? '<div class="panel" style="margin-bottom:10px"><p class="subtitle">' +
+        esc(state.search.note) + "</p></div>"
+      : "";
     if (!items.length) {
       host.innerHTML =
+        note +
         '<div class="empty-state"><div class="empty-title">No matches</div>' +
         '<div class="empty-text">Nothing matched those filters. Searching did not spend credits.</div></div>';
       return;

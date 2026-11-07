@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from sqlalchemy import select, func, or_, distinct
+from sqlalchemy import and_, case, distinct, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth import Ctx, get_ctx
@@ -22,6 +22,31 @@ class SearchBody(BaseModel):
     pageSize: int = 20
 
 
+def _word_match(field, term: str):
+    """Match a term only at the start of a word, not anywhere inside one.
+
+    ``%venu%`` matched "VP Revenue" because "Revenue" contains "venu". A recruiter typing a name
+    wants "Venu Gopal", not every title with those letters buried in it.
+    """
+    safe = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return or_(
+        field.ilike(f"{safe}%"),
+        field.ilike(f"% {safe}%"),
+        field.ilike(f"%-{safe}%"),
+        field.ilike(f"%/{safe}%"),
+        field.ilike(f"%({safe}%"),
+        field.ilike(f"%'{safe}%"),
+    )
+
+
+def _match_all_tokens(columns, text: str):
+    """Every whitespace-separated token must match at least one column."""
+    conditions = []
+    for token in [t for t in text.split() if t]:
+        conditions.append(or_(*[_word_match(column, token) for column in columns]))
+    return and_(*conditions) if conditions else None
+
+
 @router.post("/search")
 async def search(body: SearchBody, ctx: Ctx = Depends(get_ctx), db: AsyncSession = Depends(get_db)):
     filters = parse_filters(body.prompt, body.filters)
@@ -29,25 +54,19 @@ async def search(body: SearchBody, ctx: Ctx = Depends(get_ctx), db: AsyncSession
     query = select(Contact).where(Contact.workspace_id == ctx.workspace.id)
 
     def like(field, value):
-        return field.ilike(f"%{value}%")
+        return _word_match(field, value)
 
     # Free-text match across the fields a recruiter actually types: a name, a company,
     # a title, a domain or a LinkedIn slug. Without this the box silently returned everything.
     term = (body.q or "").strip()
     if term:
-        needle = f"%{term}%"
-        query = query.where(
-            or_(
-                Contact.first_name.ilike(needle),
-                Contact.last_name.ilike(needle),
-                Contact.company_name.ilike(needle),
-                Contact.title.ilike(needle),
-                Contact.domain.ilike(needle),
-                Contact.location.ilike(needle),
-                Contact.linkedin_url.ilike(needle),
-                Contact.work_email.ilike(needle),
-            )
+        condition = _match_all_tokens(
+            [Contact.first_name, Contact.last_name, Contact.company_name, Contact.title,
+             Contact.domain, Contact.location, Contact.linkedin_url, Contact.work_email],
+            term,
         )
+        if condition is not None:
+            query = query.where(condition)
 
     if filters.get("title"):
         query = query.where(like(Contact.title, filters["title"]))
@@ -68,12 +87,50 @@ async def search(body: SearchBody, ctx: Ctx = Depends(get_ctx), db: AsyncSession
     if filters.get("revealed") is not None:
         query = query.where(Contact.revealed == bool(filters["revealed"]))
 
+    # Rank a name hit above a title hit, so typing a person's name finds the person.
+    rank_clause = Contact.company_name
+    if term:
+        first_token = term.split()[0].replace("%", "").replace("_", "")
+        rank_clause = case(
+            (Contact.first_name.ilike(f"{first_token}%"), 0),
+            (Contact.last_name.ilike(f"{first_token}%"), 1),
+            (Contact.company_name.ilike(f"{first_token}%"), 2),
+            (Contact.title.ilike(f"{first_token}%"), 3),
+            else_=4,
+        )
+
     total = (await db.execute(select(func.count()).select_from(query.subquery()))).scalar() or 0
+
+    # A term typed into one filter box that matches nothing there is usually a person's name typed
+    # in the wrong box. Rather than showing an empty screen, look in every field and say so.
+    note = None
+    if total == 0:
+        text_fields = ("title", "company", "industry", "location")
+        loose = [str(v).strip() for k, v in (filters or {}).items()
+                 if isinstance(v, str) and v.strip() and k in text_fields]
+        if loose and not term:
+            text = " ".join(loose)
+            condition = _match_all_tokens(
+                [Contact.first_name, Contact.last_name, Contact.company_name, Contact.title,
+                 Contact.domain, Contact.location, Contact.linkedin_url, Contact.work_email],
+                text,
+            )
+            if condition is not None:
+                fallback = select(Contact).where(Contact.workspace_id == ctx.workspace.id).where(condition)
+                fallback_total = (await db.execute(
+                    select(func.count()).select_from(fallback.subquery()))).scalar() or 0
+                if fallback_total:
+                    query = fallback
+                    total = fallback_total
+                    used = ", ".join(sorted(k for k in text_fields
+                                            if isinstance((filters or {}).get(k), str)
+                                            and str((filters or {}).get(k)).strip()))
+                    note = f"No {used} matched \"{text}\". Showing matches from any field."
 
     page = max(int(body.page or 1), 1)
     page_size = min(max(int(body.pageSize or 20), 1), 100)
     rows = (await db.execute(
-        query.order_by(Contact.revealed.desc(), Contact.company_name, Contact.last_name)
+        query.order_by(rank_clause, Contact.revealed.desc(), Contact.company_name, Contact.last_name)
         .offset((page - 1) * page_size).limit(page_size)
     )).scalars().all()
 
@@ -91,6 +148,7 @@ async def search(body: SearchBody, ctx: Ctx = Depends(get_ctx), db: AsyncSession
         "page": page,
         "pageSize": page_size,
         "filtersApplied": filters,
+        "note": note,
         "creditsCharged": 0,
         "items": [
             {

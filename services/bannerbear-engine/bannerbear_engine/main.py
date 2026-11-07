@@ -38,6 +38,17 @@ async def health():
             "port": settings.PORT, "admin": "/admin", "api_docs": "/docs"}
 
 
+@app.get("/", include_in_schema=False)
+async def root():
+    """Send the bare origin to the admin console.
+
+    The console lived only at /admin, so opening http://localhost:8620/ returned 404 and looked
+    like a broken service from the catalog and from any link that dropped the path.
+    """
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/admin", status_code=307)
+
+
 @app.get("/admin", include_in_schema=False)
 async def admin_console():
     path = BASE_DIR / "static" / "admin.html"
